@@ -56,18 +56,7 @@ void AddSysGroup::on_pushButton_2_clicked()
                     continue;
                 }
                 FizItem *item = fizitems[item_group.value(select->name)][select->T+N/2][select->T+select->L+N-6];
-                select->level = item->level;
-                select->name = item->name;
-                select->G = item->G;
-                select->k = item->k;
-                select->symbol = item->symbol;
-                select->unit_of_measurement = item->unit_of_measurement;
-                select->symbol_unit_of_measurement = item->symbol_unit_of_measurement;
-                select->getTex()->page()->setBackgroundColor(select->level);
-                select->getTex()->setHtml("<html><head>" + scr + scroll_hide + "</head><body><p align='left'><font size='2'>$$" +
-                                          select->name + ",\\;" + select->symbol +
-                                     QString("\\\\ {%1} $$").arg(select->value_c) + "</font></p></body></html>");
-//                select->getTex()->setVisible(true);
+                select->assign(*item);
                 select->update();
             }
         }

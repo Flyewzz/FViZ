@@ -1,5 +1,6 @@
 #include "graphview.h"
 #include <QDebug>
+#include "render_fizitem.h"
 
 int L_click = 0;
 int T_click = L_click;
@@ -68,14 +69,11 @@ FizItem* GraphView::create_element(const int &L, const int &T, const int &G, con
     it->value_c = sys_c;
     it->unit_of_measurement = uom;
     it->symbol_unit_of_measurement = suom;
-    it->getTex()->page()->setBackgroundColor(color);
-    it->getTex()->setHtml("<html><head>" + scr + scroll_hide + "</head><body><p align='left'><font size='2'>$$" + name + ",\\;" + symbol +
-                         QString("\\\\ {%1} $$").arg(sys_c) + "</font></p></body></html>");
-    it->getTex()->setVisible(true);
     it->setLevel(G, k);
+    it->invalidatePixmap();
     it->update();
+
     return it;
-    //it->getTex()->page()->setBackgroundColor(Qt::red);
 }
 
 
@@ -86,7 +84,7 @@ void GraphView::remove_element(const QString &name, const int &L, const int &T)
     item->RemoveCell();
 }
 
-FizItem*& GraphView::AddFizItem(const int &L, const int &T)
+FizItem* GraphView::AddFizItem(const int &L, const int &T)
 {
 
     FizItem *item = scene.addFizItem(gX, gY, L, T, Qt::cyan);
@@ -99,7 +97,7 @@ void GraphView::ClearField()
     for (int i = 0; i < N; ++i)
         foreach (FizItem *it, out[i]) {
             it->name = "";
-            it->getTex()->setVisible(false);
+            it->invalidatePixmap();
             it->update();
             it->visible = false;
         }
@@ -109,15 +107,9 @@ void GraphView::AllUpdate()
 {
     for (int i = 0; i < N; ++i)
         foreach (FizItem *it, out[i]) {
-           if (it->name == "") continue;
-
-           it->getTex()->page()->setBackgroundColor(it->level);
-           it->getTex()->setHtml("" + scr + scroll_hide + "<p align='left'><font size='2'>$$" + it->name + ",\\;" + it->symbol +
-                                 QString("\\\\ {%1} $$").arg(it->value_c) + "</font></p>");
-           it->getTex()->setVisible(true);
-
-           it->update();
-           it->getTex()->update();
+            if (it->name == "") continue;
+            it->invalidatePixmap();
+            it->update();
         }
 }
 
@@ -385,21 +377,8 @@ void GraphView::select_level(QAction *act)
    QString choose = act->text();
 
    FizItem *item = fizitems[item_group.value(choose)][select->T+N/2][select->T+select->L+N-6];
-   select->level = item->level;
-   select->name = item->name;
-   select->G = item->G;
-   select->k = item->k;
-   select->symbol = item->symbol;
-   select->unit_of_measurement = item->unit_of_measurement;
-   select->symbol_unit_of_measurement = item->symbol_unit_of_measurement;
-   select->value_c = item->value_c;
-   select->getTex()->setHtml(scr + scroll_hide + "<p align='left'><font size='1'>$$" + select->name + ",\\; " +
-                         select->symbol +
-                         QString("\\\\ {%1} $$").arg(select->value_c) +
-                         "</font></p>");
-   select->getTex()->page()->setBackgroundColor(select->level);
+   select->assign(*item);
    select->update();
-
 }
 
 void InitializeField::fill_line()
@@ -409,14 +388,7 @@ void InitializeField::fill_line()
         FizItem *it = main_view->AddFizItem(j-N/2-line_number+6, line_number-N/2);
         line << it;
         it->setVisible(true); // (для отладки)
-        //it->setFlags(QGraphicsItem::ItemIsSelectable);
-        it->getTex() = new TextOut;
-        it->getTex()->setParent(it);
-        it->getTex()->setVisible(false);
-        it->getTex()->setGeometry(gX - 55, gY - 27, 110, 54);
-        it->getTex()->setHtml(scroll_hide); //Выключаем скроллы
-      //  it->getTex()->settings()->setAttribute(Qt::TextWordWrap, true);
-       text_assoc.insert(main_view->scene.addWidget(it->getTex()), it);
+        //it->setFlags(QGraphicsItem::ItemIsSelectable);;
         gX += 59;
         gY -= 88;
 

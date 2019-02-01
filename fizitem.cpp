@@ -13,6 +13,10 @@ FizItem& FizItem::operator =(const FizItem &another)
     y = another.y;
     unit_of_measurement = another.unit_of_measurement;
     symbol_unit_of_measurement = another.symbol_unit_of_measurement;
+    pixmapOutdated = another.pixmapOutdated;
+    if (!pixmapOutdated) {
+        cachedPixmap = another.cachedPixmap;
+    }
     return *this;
 }
 
@@ -24,12 +28,10 @@ FizItem::FizItem(const qreal &x1, const qreal &y1, const int &l, const int &t,
     selected = false; //Изначально ячейка не выделена
     G = -101;
     k = -101;
-    tex = nullptr;
 }
 
 FizItem::~FizItem()
 {
-    if (tex != nullptr) delete tex;
 }
 
 void FizItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
@@ -40,6 +42,7 @@ void FizItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
             painter->setPen(QPen(Qt::red, 2, Qt::DashLine));
         else
             painter->setPen(QPen(Qt::black, 1, Qt::SolidLine));
+
         const unsigned int n = 6;
         QPolygonF polygon;
         for (unsigned int i = 0; i < n; i++) {
@@ -50,9 +53,22 @@ void FizItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
         }
         painter->setBrush(QBrush(level));
         painter->drawPolygon(polygon);
+        if (name != "") {
+            if (pixmapOutdated) {
+                if (renderRequest != 0) {
+                    renderer->Cancel(renderRequest);
+                }
+                renderRequest = renderer->Render(this, QSize(110, 55), [=](const QPixmap &pixmap){
+                    setPixmap(pixmap);
+                    renderRequest = 0;
+                    emit update();
+                });
+            } else {
+                painter->drawPixmap(x - 110/2, y - 60/2, cachedPixmap);
+            }
+        }
         painter->setFont(QFont("Times", 12, QFont::Normal));
         painter->restore();
-
 }
 
 
@@ -83,9 +99,9 @@ void FizItem::RemoveCell()
     item_group.remove(name);
     name = "";
     visible = false;
-    if (getTex() != nullptr) getTex()->setVisible(false);
-    update();
     it->name = "";
+    invalidatePixmap();
+    update();
     it->visible = false;
     return;
     }
@@ -100,12 +116,8 @@ void FizItem::RemoveCell()
       G = item->G;
       k = item->k;
       visible = true;
+      invalidatePixmap();
       update();
-      getTex()->page()->setBackgroundColor(this->level);
-      getTex()->setHtml(scr + scroll_hide + "<p align='left'><font size='1'>$$" + name + ",\\; " +
-                            symbol +
-                            QString("\\\\ {%1} $$").arg(value_c) +
-                            "</font></p>");
       break;
     }
   }
@@ -152,15 +164,3 @@ bool FizItem::Select()
     update();
     return selected;
 }
-
-void TextOut::setParent(FizItem *&p)
-{
-    parent = p;
-}
-
-FizItem *&TextOut::getParent()
-{
-    return parent;
-}
-
-

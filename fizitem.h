@@ -18,6 +18,7 @@
 
 //Forward-declaration
 class TextOut;
+class RenderFizitem;
 
 //Описание одного блока
 class FizItem : public QGraphicsItem
@@ -26,6 +27,7 @@ class FizItem : public QGraphicsItem
     friend class AddElement;
     friend class Command_Element;
     friend class AddSysGroup;
+    friend class RenderFizitem;
     ///Убрать
     int x, y; //Координаты начала фигуры и ее размеры
     QString name; //Название блока
@@ -41,7 +43,11 @@ class FizItem : public QGraphicsItem
     QString value_c; // Размерность в СИ
     bool visible;
     QColor level; //Уровень
-    TextOut *tex;
+
+    QPixmap cachedPixmap;
+    bool pixmapOutdated = true;
+    quint64 renderRequest;
+
     FizItem& operator = (const FizItem &another);
     friend QDataStream& operator << (QDataStream &stream, const FizItem &elem);
     friend QDataStream& operator >> (QDataStream &stream, FizItem &elem);
@@ -58,26 +64,40 @@ public:
 public:
    void setLevel(const int &a, const int &b);
    FizItem* operator =(const bool &exp) { visible = exp; return this; }
+    FizItem& assign(const FizItem &rhs) {
+        this->level = rhs.level;
+        this->name = rhs.name;
+        this->G = rhs.G;
+        this->k = rhs.k;
+        this->symbol = rhs.symbol;
+        this->unit_of_measurement = rhs.unit_of_measurement;
+        this->symbol_unit_of_measurement = rhs.symbol_unit_of_measurement;
+        this->pixmapOutdated = rhs.pixmapOutdated;
+        if (!this->pixmapOutdated) {
+            this->cachedPixmap = rhs.cachedPixmap;
+        }
+        return *this;
+    }
    void RemoveCell(); //Логическое удаление (в зависимости от количества элементов на данную соту)
    void ClearCell(); //Очистка блока
    void setVisible(const bool &);
-   TextOut*& getTex() {return tex; }
    QString& getName() {return name;}
    void setSelect(const bool &flag); //Установка заданного выделения
    bool Select(); //Изменение выделения ячейки на противоположное (возврат результата bool)
+   
+
+    void setPixmap(const QPixmap& pm) {
+        cachedPixmap = pm;
+        pixmapOutdated = false;
+    }
+
+    void invalidatePixmap() {
+        pixmapOutdated = true;
+    }
 };
 
 QDataStream& operator << (QDataStream &stream, const FizItem &elem);
 QDataStream& operator >> (QDataStream &stream, FizItem &elem);
-
-class TextOut : public QWebEngineView {
- FizItem *parent;
- public:
-    explicit TextOut(QWidget *pwrt = nullptr) : QWebEngineView(pwrt){ parent = nullptr; }
- void setParent(FizItem *& p);
- FizItem *& getParent();
-};
-
 
 
 #endif // FIZITEM_H

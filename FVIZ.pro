@@ -45,7 +45,8 @@ SOURCES += \
     lowssettings.cpp \
     mainlist.cpp \
     commands.cpp \
-    general_settings.cpp
+    general_settings.cpp \
+    render_fizitem.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -58,7 +59,8 @@ HEADERS += \
     lowssettings.h \
     mainlist.h \
     commands.h \
-    general_settings.h
+    general_settings.h \
+    render_fizitem.h
 
 FORMS += \
         mainwindow.ui \

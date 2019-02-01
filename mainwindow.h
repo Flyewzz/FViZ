@@ -29,6 +29,7 @@
 #include "fizitem.h"
 #include "commands.h"
 #include <QPropertyAnimation>
+#include "render_fizitem.h"
 
 class FizItem;
 extern QString scr;
@@ -49,6 +50,8 @@ extern QDataStream work_stream;
 extern QString work_str;
 extern QAction *undo_action;
 extern QAction *redo_action;
+class RenderFizitem;
+extern RenderFizitem *renderer;
 
 extern QMainWindow *main_window;
 //Описание системной группы ФВ

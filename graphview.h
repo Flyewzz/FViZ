@@ -86,7 +86,7 @@ class GraphView : public QGraphicsView
     //Удаление элемента в логике приложения
     void remove_element(const QString &name, const int &L, const int &T);
     //!!!ИЗМЕНИТЬ МОДЕЛЬ!!!
-    FizItem*& AddFizItem(const int &L, const int &T);
+    FizItem* AddFizItem(const int &L, const int &T);
     void ClearField();
     void AllUpdate();
     ~GraphView();

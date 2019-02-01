@@ -1,5 +1,6 @@
 ﻿#include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "render_fizitem.h"
 
 QHash<QGraphicsProxyWidget*, FizItem*> text_assoc;
 int choose;
@@ -28,12 +29,14 @@ QAction *undo_action;
 QAction *redo_action;
 
 QMainWindow *main_window;
+RenderFizitem *renderer;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-
+    renderer = new RenderFizitem(nullptr, this);
+    QTimer::singleShot(0, renderer, &RenderFizitem::Fire);
 //   scr = "<script "
 //           "src='MathJax/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML'>"
 //         "</script>";
@@ -86,14 +89,8 @@ MainWindow::MainWindow(QWidget *parent) :
                 line << it;
 //                it->setVisible(true); // (для отладки)
                 //it->setFlags(QGraphicsItem::ItemIsSelectable);
-                it->getTex() = new TextOut;
-                it->getTex()->setParent(it);
-                it->getTex()->setVisible(false);
-                it->getTex()->setGeometry(gX - 55, gY - 27, 110, 54);
-                it->getTex()->setHtml(scroll_hide); //Выключаем скроллы
-              //  it->getTex()->settings()->setAttribute(Qt::TextWordWrap, true);
               // mutex.lock();
-               text_assoc.insert(main_view->scene.addWidget(it->getTex()), it);
+               // text_assoc.insert(main_view->scene.addWidget(it->getTex()), it);
                 gX += 59;
                 gY -= 88;
                // mutex.unlock();
