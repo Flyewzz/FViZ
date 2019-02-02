@@ -419,16 +419,19 @@ QDataStream &operator >>(QDataStream &stream, SysGroup &elem)
 void MainWindow::on_action_6_triggered()
 {
     QString temp = work_str;
-    work_str = QFileDialog::getOpenFileName(this, "Открытие сцены", "/", "*fviz");
+    work_str = QFileDialog::getOpenFileName(this, QString::fromUtf8(u8"Открытие сцены"), "/", "*.fviz");
     if (work_str.isEmpty()) {
         work_str = temp;
         return; //При отмене вернуться
     }
     work_file.setFileName(work_str);
     if (!work_file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::critical(nullptr, "Ошибка", "Файл не может быть открыт!");
+        QMessageBox::critical(nullptr, QString::fromUtf8(u8"Ошибка"), QString::fromUtf8(u8"Файл не может быть открыт!"));
         return;
     }
+    QFile currentFile(work_str);
+    QFileInfo fileinfo(currentFile.fileName());
+    setWindowTitle(QString::fromUtf8(u8"ФВиЗ 1.0 (Открыт ") + fileinfo.fileName() + ')');
     Open();
 }
 
@@ -436,25 +439,25 @@ void MainWindow::on_action_10_triggered()
 {
 
     QString temp = work_str;
-    work_str = QFileDialog::getSaveFileName(this, "Сохранение сцены", "/", "*.fviz");
+    work_str = QFileDialog::getSaveFileName(this, QString::fromUtf8(u8"Сохранение сцены"), "/", "*.fviz");
     if (work_str.isEmpty()) {
         work_str = temp;
         return;
     }
     work_file.setFileName(work_str);
     if (!work_file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::critical(nullptr, "Ошибка", "Ошибка сохранения сцены!");
+        QMessageBox::critical(nullptr, QString::fromUtf8(u8"Ошибка"), QString::fromUtf8(u8"Ошибка сохранения сцены!"));
         return;
     }
     Save();
-    QMessageBox::information(nullptr, "Сохранение сцены", "Сцена успешно загружена в файл!");
+    QMessageBox::information(nullptr, QString::fromUtf8(u8"Сохранение сцены"), QString::fromUtf8(u8"Сцена успешно загружена в файл!"));
 }
 
 
 void MainWindow::on_action_9_triggered()
 {
    if (!work_file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::critical(nullptr, "Ошибка", "Ошибка сохранения сцены!");
+        QMessageBox::critical(nullptr, QString::fromUtf8(u8"Ошибка"), QString::fromUtf8(u8"Ошибка сохранения сцены!"));
         return;
    }
    Save();
@@ -512,12 +515,6 @@ void MainWindow::on_action_19_triggered()
 {
     redo.pop()->execute();
     if (redo.empty()) redo_action->setEnabled(false);
-}
-
-void MainWindow::on_action_14_triggered()
-{
-    General_Settings *w = new General_Settings;
-    w->show();
 }
 
 void MainWindow::on_action_16_triggered()

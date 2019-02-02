@@ -17,8 +17,8 @@ Q_OBJECT
 public:
 
 RenderFizitem(): RenderFizitem(static_cast<QObject*>(nullptr)){}
-RenderFizitem(QObject *parent): RenderFizitem(parent, nullptr){};
-RenderFizitem(QObject *parent, QWidget *wparent);;
+RenderFizitem(QObject *parent): RenderFizitem(parent, nullptr){}
+RenderFizitem(QObject *parent, QWidget *wparent);
 
 ~RenderFizitem() {
 	delete _view;

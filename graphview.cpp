@@ -1,4 +1,4 @@
-#include "graphview.h"
+//#include "graphview.h"
 #include <QDebug>
 #include "render_fizitem.h"
 
@@ -26,7 +26,7 @@ FizItem* GraphView::create_element(const int &L, const int &T, const int &G, con
     ///Доделать!
     if (main_view->out[T+N/2][T+L+N-6]->visible) {
         ///Работает!
-       bool find = [=]() {
+       bool find = [=]() {\
             foreach (QString level, sysgroup.keys()) {
             FizItem *item = fizitems[level][T+N/2][T+L+N-6];
             if (group == item_group[item->name]) {

@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>ФВиЗ 1.0 beta</string>
+   <string>ФВиЗ 1.0</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -129,7 +129,6 @@
     <addaction name="separator"/>
     <addaction name="action_5"/>
     <addaction name="separator"/>
-    <addaction name="action_14"/>
    </widget>
    <widget class="QMenu" name="menu_4">
     <property name="title">
@@ -233,11 +232,6 @@
   <action name="action_11">
    <property name="text">
     <string>Параметры закона</string>
-   </property>
-  </action>
-  <action name="action_14">
-   <property name="text">
-    <string>Настройки программы</string>
    </property>
   </action>
   <action name="action_17">

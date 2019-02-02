@@ -124,8 +124,6 @@ private slots:
 
     void on_action_19_triggered();
 
-    void on_action_14_triggered();
-
     void on_action_16_triggered();
 
 private:

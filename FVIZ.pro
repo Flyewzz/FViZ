@@ -74,8 +74,7 @@ FORMS += \
 
 
 DISTFILES += \
-    MathJax/MathJax.js \
-    Main.qml
+    MathJax/MathJax.js
 
 RESOURCES += \
     res.qrc
