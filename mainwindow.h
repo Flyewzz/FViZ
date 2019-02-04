@@ -41,7 +41,6 @@ extern int N; //Размеры рабочей области (LT)
 extern QLabel *position;
 extern QLabel *Gk;
 extern QLabel *name_izm;
-extern QHash<QGraphicsProxyWidget*, FizItem*> text_assoc;
 //Файл для взаимодействия с базой данных элементов
 extern QFile work_file;
 //Файловый поток ввода-вывода

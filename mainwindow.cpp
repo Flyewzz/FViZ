@@ -1,8 +1,7 @@
-﻿#include "mainwindow.h"
+#include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "render_fizitem.h"
 
-QHash<QGraphicsProxyWidget*, FizItem*> text_assoc;
 int choose;
 int N = 12; //Размеры рабочей области (LT)
 //Хэш параметров системных групп ФВ
@@ -90,7 +89,6 @@ MainWindow::MainWindow(QWidget *parent) :
 //                it->setVisible(true); // (для отладки)
                 //it->setFlags(QGraphicsItem::ItemIsSelectable);
               // mutex.lock();
-               // text_assoc.insert(main_view->scene.addWidget(it->getTex()), it);
                 gX += 59;
                 gY -= 88;
                // mutex.unlock();

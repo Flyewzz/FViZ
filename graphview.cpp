@@ -121,16 +121,11 @@ void GraphView::contextMenuEvent(QContextMenuEvent *event)
 {
     select = dynamic_cast<FizItem*>(itemAt(event->pos()));
 
-    if (!select) {
-       //Отлавливаем нажатия на текстовые поля для вывода информации блока
-       QGraphicsProxyWidget *to = dynamic_cast<QGraphicsProxyWidget*>(itemAt(event->pos()));
-       if (!to) return;
-       select = text_assoc[to];
-    }
     if (!select || !select->visible) {
-    menu->exec(event->globalPos());
-    return;
+      menu->exec(event->globalPos());
+      return;
     }
+
     L_click = select->L;
     T_click = select->T;
     //Очистка прошлого меню выбора уровней
@@ -181,139 +176,133 @@ void GraphView::contextMenuEvent(QContextMenuEvent *event)
 void GraphView::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() != Qt::LeftButton) return;
-    select = dynamic_cast<FizItem*>(itemAt(event->pos())); //Получение выделенного элемента
-            if (!select) {
-                //Если получено текстовое поле на самом элементе, возвращаем сам элемент
-            QGraphicsProxyWidget *to = dynamic_cast<QGraphicsProxyWidget*>(itemAt(event->pos()));
-            if (!to) {
-                /*Если не выделено ничего, тогда очищаем нарисованный polygon,
-                 * затем отменяем предыдущее выделение */
-                polygon.clear();
-                if (ittt == nullptr) return;
-                delete ittt;
-                ittt = nullptr;
-                foreach (FizItem *item, selected_items)
-                    item->setSelect(false);
-                selected_items.clear();
-                return;
-            }
-            select = text_assoc[to];
-            }
-            if (!select->visible) return;
-            if (select->Select())
-                selected_items << select;
-            else {
-                selected_items.removeOne(select);
-                if (ittt != nullptr) {polygon.clear(); delete ittt; ittt = nullptr;}
-            }
-            size_t select_size = selected_items.size();
-            if (select_size == 3 || select_size == 4) {
-//                for (int i = 0; i < selected_items.length(); ++i)
-//                    qDebug() << "L^" <<selected_items[i]->L << "T^" << selected_items[i]->T;
-                qSort(selected_items.begin(), selected_items.end(),
-                      [](const FizItem *a, const FizItem *b) {
-                    if (a->L == b->L) return (a->T > b->T);
-                    return a->L > b->L;
-                });
-            FizItem *&e1 = selected_items[0]; //Находим левый верхний элемент
-//                qDebug() << "1:";
-                qSort(selected_items.begin()+1, selected_items.end(),
-                      [](const FizItem *a, const FizItem *b) {
-                    if (a->L == b->L) return a->T < b->T;
-                    return a->L < b->L;
-                });
-                FizItem *&e2 = selected_items[1]; //Находим правый нижний элемент
-//                for (int i = 0; i < selected_items.length(); ++i)
-//                    qDebug() << "L^" <<selected_items[i]->L << "T^" << selected_items[i]->T;
-                FizItem *&e3 = selected_items[2];
-                FizItem *e4 = e3; //Криво, но работает
-                if (select_size == 4) e4 = selected_items[3];
 
-                bool check_G = (e1->G + e2->G == e3->G + e4->G);
-                bool check_k = (e1->k + e2->k == e3->k + e4->k);
-                bool check_L = (e1->L + e2->L == e3->L + e4->L);
-                bool check_T = (e1->T + e2->T == e3->T + e4->T);
-                //########
-                //Проверка соотношений для построения параллелограмма
-                bool check = check_G && check_k && check_L && check_T;
-                if (!check) return;
-                FizItem *temp = e2;
-                e2 = e3;
-                e3 = temp;
-                // Строим параллелограмм правильно (!)
-                for (int i = 0; i < selected_items.length(); ++i)
-                    polygon << QPointF(selected_items[i]->x, selected_items[i]->y);
-                QPen pen;
-                Law *find_law = [=]() {
-                    QVector<QString> vec;
-                    vec << e1->getName() << e3->getName() << e2->getName() << e4->getName();
-                    foreach (QString group, lawsgrouplist.keys()) {
-                        foreach (Law *law, lawsgrouplist[group]->list) {
-                            if (vec == law->e) {
-                                select_group = group;
-                                vec.clear();
-                                return law;
-                            }
-                        }
+    select = dynamic_cast<FizItem*>(itemAt(event->pos())); //Получение выделенного элемента
+    if (!select) {
+        /*Если не выделено ничего, тогда очищаем нарисованный polygon,
+         * затем отменяем предыдущее выделение */
+        polygon.clear();
+        if (ittt == nullptr) return;
+        delete ittt;
+        ittt = nullptr;
+        foreach (FizItem *item, selected_items)
+            item->setSelect(false);
+        selected_items.clear();
+
+        return;
+    }
+
+    if (!select->visible) return;
+
+    if (select->Select()) {
+        selected_items << select;
+    } else {
+        selected_items.removeOne(select);
+
+        if (ittt != nullptr) {
+            polygon.clear();
+            delete ittt;
+            ittt = nullptr;
+        }
+    }
+
+    size_t select_size = selected_items.size();
+    if (select_size == 3 || select_size == 4) {
+        qSort(selected_items.begin(), selected_items.end(),
+            [](const FizItem *a, const FizItem *b) {
+                if (a->L == b->L) return a->T > b->T;
+                return a->L > b->L;
+            }
+        );
+        FizItem *&e1 = selected_items[0]; //Находим левый верхний элемент
+        qSort(selected_items.begin(), selected_items.end(),
+            [](const FizItem *a, const FizItem *b) {
+                if (a->L == b->L) return a->T < b->T;
+                return a->L < b->L;
+            }
+        );
+        FizItem *&e2 = selected_items[1]; //Находим правый нижний элемент
+        FizItem *&e3 = selected_items[2];
+        FizItem *e4 = e3; //Криво, но работает
+        if (select_size == 4) e4 = selected_items[3];
+
+        bool check_G = (e1->G + e2->G == e3->G + e4->G);
+        bool check_k = (e1->k + e2->k == e3->k + e4->k);
+        bool check_L = (e1->L + e2->L == e3->L + e4->L);
+        bool check_T = (e1->T + e2->T == e3->T + e4->T);
+        //########
+        //Проверка соотношений для построения параллелограмма
+        bool check = check_G && check_k && check_L && check_T;
+        if (!check) return;
+
+        FizItem *temp = e2;
+        e2 = e3;
+        e3 = temp;
+        // Строим параллелограмм правильно (!)
+        for (int i = 0; i < selected_items.length(); ++i) {
+            polygon << QPointF(selected_items[i]->x, selected_items[i]->y);
+        }
+        QPen pen;
+        Law *find_law = [=]() {
+            QVector<QString> vec;
+            vec << e1->getName() << e3->getName() << e2->getName() << e4->getName();
+            foreach (QString group, lawsgrouplist.keys()) {
+                foreach (Law *law, lawsgrouplist[group]->list) {
+                    if (vec == law->e) {
+                        select_group = group;
+                        vec.clear();
+                        return law;
                     }
-                    vec.clear();
-                    return static_cast<Law*>(nullptr);
-                }();
-               if (find_law == nullptr) pen.setColor(Qt::black);
-               else {
-                   pen.setColor(find_law->color);
-                   name_law = find_law->name;
-                   description_law = find_law->description;
-                   formula_law = find_law->formula;
-               }
-                pen.setWidth(4);
-             ittt = scene.addPolygon(polygon, pen);
-             //Передача названий величин форме для добавления/изменения законов
-             k1 = e1->getName(); k2 = e3->getName(); k3 = e2->getName(); k4 = e4->getName();
-             QTimer *timer = new QTimer;
-             timer->setInterval(800);
-             timer->start();
-             connect(timer, &QTimer::timeout, [timer](){
-             ListOfLaws *w = new ListOfLaws;
-             w->show();
-             timer->stop();
-             delete timer;
-            });
-       }
+                }
+            }
+            vec.clear();
+            return static_cast<Law*>(nullptr);
+        }();
+        if (find_law == nullptr) {
+            pen.setColor(Qt::black);
+        } else {
+            pen.setColor(find_law->color);
+            name_law = find_law->name;
+            description_law = find_law->description;
+            formula_law = find_law->formula;
+        }
+        pen.setWidth(4);
+        ittt = scene.addPolygon(polygon, pen);
+        //Передача названий величин форме для добавления/изменения законов
+        k1 = e1->getName(); k2 = e3->getName(); k3 = e2->getName(); k4 = e4->getName();
+        QTimer *timer = new QTimer(this);
+        timer->setInterval(800);
+        timer->start();
+        connect(timer, &QTimer::timeout, [timer](){
+            ListOfLaws *w = new ListOfLaws;
+            w->show();
+            timer->stop();
+            delete timer;
+        });
+   }
 }
 
 void GraphView::mouseMoveEvent(QMouseEvent *event)
 {
     FizItem *item = dynamic_cast<FizItem*>(itemAt(event->pos()));
-    //Игнорируем пустую область
-    if (!item) {
-        //Отлавливаем нажатия на текстовые поля для вывода информации блока
-        QGraphicsProxyWidget *to = dynamic_cast<QGraphicsProxyWidget*>(itemAt(event->pos()));
-        if (!to) return;
-       //item = to->getParent();
-        item = text_assoc[to];
-    };
-    position->setText(QString("L<sup>%1</sup>T<sup>%2</sup>").arg(item->L).arg(item->T));
-    if (item->visible) {
-    Gk->setText(QString("G<sup>%1</sup>k<sup>%2</sup>").arg(item->G).arg(item->k));
-    name_izm->setText(item->unit_of_measurement + ", " + item->symbol_unit_of_measurement);
+
+    if (item != nullptr) {
+        position->setText(QString("L<sup>%1</sup>T<sup>%2</sup>").arg(item->L).arg(item->T));
     }
-    else {
-      Gk->setText("Gk");
-      name_izm->setText("ед.изм");
+
+    if (item != nullptr && item->visible) {
+        Gk->setText(QString("G<sup>%1</sup>k<sup>%2</sup>").arg(item->G).arg(item->k));
+        name_izm->setText(item->unit_of_measurement + ", " + item->symbol_unit_of_measurement);
+    } else {
+        Gk->setText("Gk");
+        name_izm->setText("ед.изм");
     }
 }
 
 void GraphView::mouseDoubleClickEvent(QMouseEvent *event)
 {
   FizItem *item = dynamic_cast<FizItem*>(itemAt(event->pos()));
-  if (!item) {
-      //Отлавливаем нажатия на текстовые поля для вывода информации блока
-      QGraphicsProxyWidget *to = dynamic_cast<QGraphicsProxyWidget*>(itemAt(event->pos()));
-      if (!to) return;
-      //item = to->getParent();
-      item = text_assoc[to];
-  }
+  if (!item) return;
 
   L_click = item->L;
   T_click = item->T;
