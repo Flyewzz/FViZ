@@ -28,9 +28,13 @@
 class Command;
 class FizItem;
 
-//Стеки общего уровня для хранения команд (отмены и повтора)
-extern QStack<Command*> undo;
-extern QStack<Command*> redo;
+// Should be allocated with new
+void AddUndoCommand(Command*);
+void AddRedoCommand(Command*);
+
+// Should be delete'd
+Command* PopUndoCommand();
+Command* PopRedoCommand();
 
 //Общий абстрактный класс, описывающий одну команду
 class Command
@@ -62,7 +66,7 @@ public:
     explicit Command_Element(const int &L, const int &T, const int &G, const int &k,
                              const QString &symbol, const QString &name, const QString &sys_c,
                              const QString &uom, const QString &suom, const QString &group,
-                             const QColor &color, const int &flag = -1, const int &id = 0,
+                             const QColor &color, const int flag = -1, const int id = 0,
                              FizItem *it = nullptr) : L(L), T(T), G(G), k(k),
                              symbol(symbol), name(name), sys_c(sys_c), uom(uom), suom(suom),
                              group(group), color(color), _item(it) {this->flag = flag; this->id = id;}

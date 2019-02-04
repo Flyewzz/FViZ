@@ -503,14 +503,20 @@ void MainWindow::on_action_7_triggered()
 
 void MainWindow::on_action_13_triggered()
 {
-    undo.pop()->execute();
-    if (undo.empty()) undo_action->setEnabled(false);
+    Command *cmd = PopUndoCommand();
+    if (cmd != nullptr) {
+        cmd->execute();
+        delete cmd;
+    }
 }
 
 void MainWindow::on_action_19_triggered()
 {
-    redo.pop()->execute();
-    if (redo.empty()) redo_action->setEnabled(false);
+    Command *cmd = PopRedoCommand();
+    if (cmd != nullptr) {
+        cmd->execute();
+        delete cmd;
+    }
 }
 
 void MainWindow::on_action_16_triggered()

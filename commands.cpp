@@ -2,9 +2,74 @@
 //Состояния флага
 enum FlagState {REMOVE = -1, CHANGE, ADD};
 
+namespace {
 //Стеки общего уровня для хранения команд (отмены и повтора)
+QMutex commandStacksLock;
 QStack<Command*> undo;
 QStack<Command*> redo;
+
+void SyncUI() {
+    undo_action->setEnabled(!undo.empty());
+    redo_action->setEnabled(!redo.empty());
+}
+
+} // anonymous namespace
+
+void AddUndoCommand(Command* cmd) {
+    commandStacksLock.lock();
+
+    if (cmd != nullptr) {
+        undo << cmd;
+
+        for (const auto redoCmd : redo) {
+            delete redoCmd;
+        }
+
+        redo.clear();
+    }
+
+    SyncUI();
+
+    commandStacksLock.unlock();
+}
+
+void AddRedoCommand(Command* cmd) {
+    commandStacksLock.lock();
+
+    if (cmd != nullptr) {
+        redo << cmd;
+    }
+    SyncUI();
+
+    commandStacksLock.unlock();
+}
+
+Command* PopUndoCommand() {
+    commandStacksLock.lock();
+
+    Command *cmd = nullptr;
+    if (!undo.empty()) {
+        cmd = undo.pop();
+    }
+    SyncUI();
+
+    commandStacksLock.unlock();
+    return cmd;
+}
+
+Command* PopRedoCommand() {
+    commandStacksLock.lock();
+
+    Command *cmd = nullptr;
+    if (!redo.empty()) {
+        cmd = redo.pop();
+    }
+    SyncUI();
+
+    commandStacksLock.unlock();
+    return cmd;
+}
+
 QString Command_Element::createLogs()
 {
     return "Лог 1";
@@ -18,16 +83,16 @@ void Command_Element::execute()
             main_view->create_element(L, T, G, k,
                                   symbol, name, sys_c,
                                   uom, suom, group, color);
-            redo << new Command_Element(L, T, G, k,
+            AddRedoCommand(new Command_Element(L, T, G, k,
                                     symbol, name, sys_c,
                                     uom, suom,
-                                    item_group[name], color, -1, 1);
+                                    item_group[name], color, -1, 1));
     }
     else if  (flag == FlagState::REMOVE) {
-        redo << new Command_Element(L, T, G, k,
+        AddRedoCommand(new Command_Element(L, T, G, k,
                                     symbol, name, sys_c,
                                     uom, suom,
-                                    item_group[name], color, 1, 1);
+                                    item_group[name], color, 1, 1));
         main_view->remove_element(name, L, T);
     }
     else if (flag == FlagState::CHANGE) {
@@ -46,32 +111,31 @@ void Command_Element::execute()
             _item = main_view->create_element(L, T, G, k,
                                   symbol, name, sys_c,
                                   uom, suom, group, color);
-            redo << new Command_Element(remember_L, remember_T,
+            AddRedoCommand(new Command_Element(remember_L, remember_T,
                                     remember_G, remember_k,
                                     remember_symbol, remember_name,
                                     remember_sys_c,
                                     remember_uom,
                                     remember_suom,
                                     remember_group,
-                                    remember_color, 0, 1, _item);
+                                    remember_color, 0, 1, _item));
     }
-    redo_action->setEnabled(true);
     return;
     }
     if (flag == FlagState::ADD) {
             main_view->create_element(L, T, G, k,
                                       symbol, name, sys_c,
                                       uom, suom, group, color);
-            undo << new Command_Element(L, T, G, k,
+            AddUndoCommand(new Command_Element(L, T, G, k,
                                         symbol, name, sys_c,
                                         uom, suom,
-                                        item_group[name], color, -1);
+                                        item_group[name], color, -1));
         }
         else if  (flag == FlagState::REMOVE) {
-            undo << new Command_Element(L, T, G, k,
+            AddUndoCommand(new Command_Element(L, T, G, k,
                                         symbol, name, sys_c,
                                         uom, suom,
-                                        item_group[name], color, 1);
+                                        item_group[name], color, 1));
             main_view->remove_element(name, L, T);
         }
         else if (flag == FlagState::CHANGE) {
@@ -90,14 +154,13 @@ void Command_Element::execute()
             _item = main_view->create_element(L, T, G, k,
                               symbol, name, sys_c,
                               uom, suom, group, color);
-            undo << new Command_Element(remember_L, remember_T,
+            AddUndoCommand(new Command_Element(remember_L, remember_T,
                                 remember_G, remember_k,
                                 remember_symbol, remember_name,
                                 remember_sys_c,
                                 remember_uom,
                                 remember_suom,
                                 remember_group,
-                                remember_color, 0, 0, _item);
+                                remember_color, 0, 0, _item));
         }
-    undo_action->setEnabled(true);
 }

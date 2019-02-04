@@ -1,6 +1,7 @@
 //#include "graphview.h"
 #include <QDebug>
 #include "render_fizitem.h"
+#include "commands.h"
 
 int L_click = 0;
 int T_click = L_click;
@@ -349,16 +350,11 @@ void GraphView::slotActivated(QAction *act)
   else if (choose == "Удалить" && select->name != "") {
       ///Рассмотрим выбор меню удаления
 
-     undo << new Command_Element(select->L, select->T, select->G, select->k,
+     AddUndoCommand(new Command_Element(select->L, select->T, select->G, select->k,
                                  select->symbol, select->name, select->value_c,
                                  select->unit_of_measurement, select->symbol_unit_of_measurement,
-                                 item_group[select->name], select->level, 1);
-     undo_action->setEnabled(true);
-     foreach (Command *command, redo) {
-         delete command;
-     }
-     redo.clear();
-     redo_action->setEnabled(false);
+                                 item_group[select->name], select->level, 1));
+     
      select->RemoveCell();
   }
   else if (choose == "Редактировать" && select->name != "") {

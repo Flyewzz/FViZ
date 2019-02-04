@@ -104,30 +104,24 @@ void AddElement::on_pushButton_clicked()
         remember_element = main_view->create_element(L, T, G, k,
                                   symbol, name, sys_c,
                                   uom, suom, group, choose_color);
-        undo << new Command_Element(L_click, T_click,
+        AddUndoCommand(new Command_Element(L_click, T_click,
                                     remember_G, remember_k,
                                     remember_symbol, remember_name,
                                     remember_sys_c,
                                     remember_uom,
                                     remember_suom,
                                     remember_group,
-                                    remember_color, 0, 0, remember_element);
-        goto change_element_continue;
-    }
-    main_view->create_element(L, T, G, k,
+                                    remember_color, 0, 0, remember_element));
+    } else {
+        main_view->create_element(L, T, G, k,
                               symbol, name, sys_c,
                               uom, suom, group, choose_color);
-    undo << new Command_Element(L, T, G, k, symbol, name, sys_c,
-                                    uom, suom, group, choose_color);
-    change_element_continue:
+        AddUndoCommand(new Command_Element(L, T, G, k, symbol, name, sys_c,
+                                    uom, suom, group, choose_color));
+    }
     L_click = L;
     T_click = T;
-    undo_action->setEnabled(true);
-    foreach (Command *command, redo) {
-        delete command;
-    }
-    redo.clear();
-    redo_action->setEnabled(false);
+    
     QMessageBox::information(this, "Физическая величина", "Величина успешно внесена в таблицу!");
 }
 
