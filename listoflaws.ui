@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>ListOfLaws</class>
- <widget class="QWidget" name="ListOfLaws">
+ <widget class="QDialog" name="ListOfLaws">
   <property name="geometry">
    <rect>
     <x>0</x>

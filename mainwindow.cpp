@@ -124,7 +124,7 @@ MainWindow::MainWindow(QWidget *parent) :
         }
         Open();
         // ##################################################################
-        General_Settings *w = new General_Settings;
+        General_Settings *w = new General_Settings(this);
         w->move(this->width() + 1, 0);
         w->show();
         w->update();
@@ -356,30 +356,30 @@ void MainWindow::closeEvent(QCloseEvent *event)
 }
 void MainWindow::on_action_2_triggered()
 {
-    About *ab = new About;
+    About *ab = new About(this);
     ab->show();
 }
 
 void MainWindow::on_action_3_triggered()
 {
-   AddSysGroup *w = new AddSysGroup;
+   AddSysGroup *w = new AddSysGroup(this);
    w->show();
 }
 
 void CreateSysGroup(const QString &name, const int &G, const int &k, const QColor &col)
 {
-   sysgroup[name] = new SysGroup(G, k, col);
-   QVector<QVector<FizItem*>> field;
-       QVector<FizItem*> line;
-           for (int i = 0; i < N; ++i) {
-               for (int j = 0; j < N; ++j) {
-                   FizItem *elem = new FizItem(0, 0, j-N/2, i-N/2);
-                   elem->setLevel(G, k);
-                   line << elem;
-               }
-               field << line;
-               line.clear();
-       }
+    sysgroup[name] = new SysGroup(G, k, col);
+    QVector<QVector<FizItem*>> field;
+    QVector<FizItem*> line;
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < N; ++j) {
+            FizItem *elem = new FizItem(0, 0, j-N/2, i-N/2);
+            elem->setLevel(G, k);
+            line << elem;
+        }
+        field << line;
+        line.clear();
+    }
     fizitems[name] = field;
 }
 
@@ -395,7 +395,7 @@ void RemoveSysGroup(const QString &name)
             //Очищаем каждую ячейку в строке
             delete item;
         }
-    fizitems[name][i].clear(); //Очищаем каждую строку
+        fizitems[name][i].clear(); //Очищаем каждую строку
     }
     fizitems[name].clear(); //Очистка целого уровня
     fizitems.remove(name);
@@ -473,19 +473,19 @@ void MainWindow::on_action_12_triggered()
 
 void MainWindow::on_action_5_triggered()
 {
-    LawsSettings *w = new LawsSettings;
+    LawsSettings *w = new LawsSettings(this);
     w->show();
 }
 
 void MainWindow::on_action_11_triggered()
 {
-    ListOfLaws *y = new ListOfLaws;
+    ListOfLaws *y = new ListOfLaws(this);
     y->show();
 }
 
 void MainWindow::on_action_8_triggered()
 {
-    MainList *w = new MainList;
+    MainList *w = new MainList(this);
     w->show();
 }
 
@@ -500,7 +500,6 @@ void MainWindow::on_action_7_triggered()
     ClearStruct();
     this->close();
 }
-
 
 void MainWindow::on_action_13_triggered()
 {

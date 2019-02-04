@@ -1,7 +1,7 @@
 #ifndef LOWSSETTINGS_H
 #define LOWSSETTINGS_H
 
-#include <QWidget>
+#include <QDialog>
 #include "mainwindow.h"
 #include <QList>
 
@@ -39,7 +39,7 @@ namespace Ui {
 class LawsSettings;
 }
 
-class LawsSettings : public QWidget
+class LawsSettings : public QDialog
 {
     Q_OBJECT
 

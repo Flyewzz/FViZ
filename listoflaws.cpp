@@ -8,7 +8,7 @@ QString formula_law;
 QString select_group;
 
 ListOfLaws::ListOfLaws(QWidget *parent) :
-    QWidget(parent),
+    QDialog(parent),
     ui(new Ui::ListOfLaws)
 {
     ui->setupUi(this);

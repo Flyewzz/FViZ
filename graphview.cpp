@@ -150,7 +150,7 @@ void GraphView::contextMenuEvent(QContextMenuEvent *event)
     }
     //Создаем и связываем новые меню
     menu_element = new QMenu(this);
-    level_menu = new QMenu;
+    level_menu = new QMenu(this);
     level_menu->setTitle("Уровни");
     /// :))) item_group.clear();
     //Здесь нам нужно наполнить список для выбора других элементов
@@ -273,8 +273,8 @@ void GraphView::mousePressEvent(QMouseEvent *event)
         QTimer *timer = new QTimer(this);
         timer->setInterval(800);
         timer->start();
-        connect(timer, &QTimer::timeout, [timer](){
-            ListOfLaws *w = new ListOfLaws;
+        connect(timer, &QTimer::timeout, [this, timer](){
+            ListOfLaws *w = new ListOfLaws(this);
             w->show();
             timer->stop();
             delete timer;
@@ -312,7 +312,7 @@ void GraphView::mouseDoubleClickEvent(QMouseEvent *event)
       item->setSelect(false);
   selected_items.clear();
   //Вызываем форму для добавления/редактирования элементов
-  AddElement *form = new AddElement;
+  AddElement *form = new AddElement(this);
   form->show();
 }
 
@@ -338,7 +338,7 @@ void GraphView::slotActivated(QAction *act)
   if (choose == "Добавить") {
 
       change_elem = false;
-      AddElement *form = new AddElement;
+      AddElement *form = new AddElement(this);
       QPoint point = main_window->mapToGlobal(QPoint(main_view->pos().x() - 300,
                                               main_view->pos().y() + 50));
       form->move(point);
@@ -371,7 +371,7 @@ void GraphView::slotActivated(QAction *act)
              item->setSelect(false);
          }
          selected_items.clear();
-         AddElement *form = new AddElement;
+         AddElement *form = new AddElement(this);
          QPoint point = main_window->mapToGlobal(QPoint(main_view->pos().x() - 300,
                                                  main_view->pos().y() + 50));
          form->move(point);

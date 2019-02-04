@@ -1,7 +1,7 @@
 #ifndef MAINLIST_H
 #define MAINLIST_H
 
-#include <QWidget>
+#include <QDialog>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QCheckBox>
@@ -11,7 +11,7 @@ namespace Ui {
 class MainList;
 }
 
-class MainList : public QWidget
+class MainList : public QDialog
 {
     Q_OBJECT
     void Fill(); //Заполнение раскрывающегося списка

@@ -8,7 +8,7 @@ bool change_elem;
 FizItem *remember_element;
 
 AddElement::AddElement(QWidget *parent) :
-    QWidget(parent),
+    QDialog(parent),
     ui(new Ui::AddElement)
 {
     ui->setupUi(this);

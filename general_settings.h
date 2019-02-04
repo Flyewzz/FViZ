@@ -1,7 +1,7 @@
 #ifndef GENERAL_SETTINGS_H
 #define GENERAL_SETTINGS_H
 
-#include <QWidget>
+#include <QDialog>
 #include <QTimer>
 #include "mainwindow.h"
 
@@ -9,7 +9,7 @@ namespace Ui {
 class General_Settings;
 }
 
-class General_Settings : public QWidget
+class General_Settings : public QDialog
 {
     Q_OBJECT
     QTimer *timer;

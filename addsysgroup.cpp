@@ -5,7 +5,7 @@ QColor color;
 
 
 AddSysGroup::AddSysGroup(QWidget *parent) :
-    QWidget(parent),
+    QDialog(parent),
     ui(new Ui::AddSysGroup)
 {
     ui->setupUi(this);

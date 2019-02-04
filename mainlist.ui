@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>MainList</class>
- <widget class="QWidget" name="MainList">
+ <widget class="QDialog" name="MainList">
   <property name="geometry">
    <rect>
     <x>0</x>

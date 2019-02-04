@@ -1,7 +1,7 @@
 #ifndef ADDELEMENT_H
 #define ADDELEMENT_H
 
-#include <QWidget>
+#include <QDialog>
 #include "mainwindow.h"
 #include <QPalette>
 #include <QWebEngineView>
@@ -14,7 +14,7 @@ class AddElement;
 }
 
 //Форма для добавления нового элемента
-class AddElement : public QWidget
+class AddElement : public QDialog
 {
     Q_OBJECT
 

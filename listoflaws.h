@@ -1,7 +1,7 @@
 #ifndef LISTOFLOWS_H
 #define LISTOFLOWS_H
 
-#include <QWidget>
+#include <QDialog>
 #include "lawssettings.h"
 #include "mainwindow.h"
 #include <QWebEngineView>
@@ -16,7 +16,7 @@ namespace Ui {
 class ListOfLaws;
 }
 
-class ListOfLaws : public QWidget
+class ListOfLaws : public QDialog
 {
     Q_OBJECT
 

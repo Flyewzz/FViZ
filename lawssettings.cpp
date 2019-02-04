@@ -12,7 +12,7 @@ foreach (Law *law, group->list) {
     }
 }
 LawsSettings::LawsSettings(QWidget *parent) :
-    QWidget(parent),
+    QDialog(parent),
     ui(new Ui::LawsSettings)
 {
     ui->setupUi(this);

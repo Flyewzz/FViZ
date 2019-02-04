@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>AddSysGroup</class>
- <widget class="QWidget" name="AddSysGroup">
+ <widget class="QDialog" name="AddSysGroup">
   <property name="geometry">
    <rect>
     <x>0</x>

@@ -21,7 +21,7 @@ void MainList::Fill()
 }
 
 MainList::MainList(QWidget *parent) :
-    QWidget(parent),
+    QDialog(parent),
     ui(new Ui::MainList)
 {
     ui->setupUi(this);
@@ -56,7 +56,7 @@ MainList::MainList(QWidget *parent) :
         k3 = find_law->e[2]; k4 = find_law->e[3];
         //#######################################################
         //Отображение закона
-        ListOfLaws *w = new ListOfLaws;
+        ListOfLaws *w = new ListOfLaws(this);
         w->show();
       }
     });

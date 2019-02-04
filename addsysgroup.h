@@ -1,7 +1,7 @@
 #ifndef ADDSYSGROUP_H
 #define ADDSYSGROUP_H
 
-#include <QWidget>
+#include <QDialog>
 #include "mainwindow.h"
 #include <QPalette>
 #include <QColorDialog>
@@ -11,7 +11,7 @@ namespace Ui {
 class AddSysGroup;
 }
 
-class AddSysGroup : public QWidget
+class AddSysGroup : public QDialog
 {
     Q_OBJECT
 
