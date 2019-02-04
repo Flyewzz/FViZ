@@ -136,8 +136,8 @@
     </property>
     <addaction name="action_8"/>
     <addaction name="separator"/>
-    <addaction name="action_16"/>
-    <addaction name="action_18"/>
+    <addaction name="zoomInAction"/>
+    <addaction name="zoomOutAction"/>
    </widget>
    <widget class="QMenu" name="menu_5">
     <property name="title">
@@ -268,7 +268,7 @@
     <string>Ctrl+Y</string>
    </property>
   </action>
-  <action name="action_16">
+  <action name="zoomInAction">
    <property name="icon">
     <iconset resource="res.qrc">
      <normaloff>:/pics/pics/+.png</normaloff>:/pics/pics/+.png</iconset>
@@ -280,7 +280,7 @@
     <string>Ctrl+=</string>
    </property>
   </action>
-  <action name="action_18">
+  <action name="zoomOutAction">
    <property name="icon">
     <iconset resource="res.qrc">
      <normaloff>:/pics/pics/-.png</normaloff>:/pics/pics/-.png</iconset>

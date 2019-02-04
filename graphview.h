@@ -91,17 +91,21 @@ class GraphView : public QGraphicsView
     void AllUpdate();
     ~GraphView();
 protected:
-    virtual void contextMenuEvent(QContextMenuEvent *event);
+    virtual void contextMenuEvent(QContextMenuEvent *event) override;
    // virtual void mouseReleaseEvent(QMouseEvent *event);
-    virtual void mousePressEvent(QMouseEvent *event);
-    virtual void mouseMoveEvent(QMouseEvent *event);
-    virtual void mouseDoubleClickEvent(QMouseEvent *event);
-    virtual void wheelEvent(QWheelEvent *event);
+    virtual void mousePressEvent(QMouseEvent *event) override;
+    virtual void mouseMoveEvent(QMouseEvent *event) override;
+    virtual void mouseDoubleClickEvent(QMouseEvent *event) override;
+    virtual void wheelEvent(QWheelEvent *event) override;
 public slots:
     //Отображение действий при нажатии на пункты контекстного меню
     void slotActivated(QAction *act);
     //Выбор блока на других уровнях
     void select_level(QAction *act);
+
+    void zoom(bool in);
+
+    void zoom(double byFactor, QPoint at);
 };
 
 #endif // GRAPHVIEW_H

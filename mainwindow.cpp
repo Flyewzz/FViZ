@@ -519,8 +519,12 @@ void MainWindow::on_action_19_triggered()
     }
 }
 
-void MainWindow::on_action_16_triggered()
-{
+void MainWindow::on_zoomInAction_triggered() {
+    main_view->zoom(true);
+}
+
+void MainWindow::on_zoomOutAction_triggered() {
+    main_view->zoom(false);
 }
 
 void EditSysGroup(QString old_name, QString new_name, const int &G, const int &k, const QColor &col)

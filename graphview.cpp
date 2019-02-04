@@ -319,18 +319,51 @@ void GraphView::mouseDoubleClickEvent(QMouseEvent *event)
 
 void GraphView::wheelEvent(QWheelEvent *event)
 {
+    double scaleFactor;
+    double angle = event->angleDelta().y();
 
-    //Константа изменения масштаба главной сцены
-    const double scaleFactor = 1.08;
-    //Zoom in
-    if (event->delta() > 0) {
-        scale(scaleFactor, scaleFactor);
-        QGraphicsView::wheelEvent(event);
-        return;
+    if      (angle > 0) { scaleFactor = 1 + ( angle / 360 * 0.25); }
+    else if (angle < 0) { scaleFactor = 1 - (-angle / 360 * 0.25); }
+    else                { scaleFactor = 1; }
+
+    zoom(scaleFactor, event->pos());
+    event->accept();
+}
+
+void GraphView::zoom(bool in) {
+    double scaleFactor = 1.25;
+    if (!in) {
+        scaleFactor = 1 / scaleFactor;
     }
-    //Zoom out
-    scale(1.0/scaleFactor, 1.0/scaleFactor);
-    QGraphicsView::wheelEvent(event);
+    zoom(scaleFactor, QPoint(viewport()->width()/2, viewport()->height()/2));
+}
+
+void GraphView::zoom(double scaleFactor, QPoint pos) {
+    // https://blog.automaton2000.com/2014/04/mouse-centered-zooming-in-qgraphicsview.html
+    QPointF posf = this->mapToScene(pos);
+
+    scale(scaleFactor, scaleFactor);
+
+    double w = viewport()->width();
+    double h = viewport()->height();
+
+    double wf = mapToScene(QPoint(w-1, 0)).x()
+                    - mapToScene(QPoint(0,0)).x();
+    double hf = mapToScene(QPoint(0, h-1)).y()
+                    - mapToScene(QPoint(0,0)).y();
+
+    double lf = posf.x() - pos.x() * wf / w;
+    double tf = posf.y() - pos.y() * hf / h;
+
+    /* try to set viewport properly */
+    ensureVisible(lf, tf, wf, hf, 0, 0);
+
+    QPointF newPos = mapToScene(pos);
+
+    /* readjust according to the still remaining offset/drift
+     * I don't know how to do this any other way */
+    ensureVisible(QRectF(QPointF(lf, tf) - newPos + posf,
+                    QSizeF(wf, hf)), 0, 0);
 }
 
 void GraphView::slotActivated(QAction *act)

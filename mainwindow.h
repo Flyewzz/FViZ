@@ -123,7 +123,8 @@ private slots:
 
     void on_action_19_triggered();
 
-    void on_action_16_triggered();
+    void on_zoomInAction_triggered();
+    void on_zoomOutAction_triggered();
 
 private:
     Ui::MainWindow *ui;
