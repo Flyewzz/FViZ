@@ -24,11 +24,11 @@ FizItem* GraphView::create_element(const int &L, const int &T, const int &G, con
                                const QColor &color)
 {
     ///Доделать!
-    if (main_view->out[T+N/2][T+L+N-6]->visible) {
+    if (main_view->out[T+N/2][T+L+N/2]->visible) {
         ///Работает!
        bool find = [=]() {\
             foreach (QString level, sysgroup.keys()) {
-            FizItem *item = fizitems[level][T+N/2][T+L+N-6];
+            FizItem *item = fizitems[level][T+N/2][T+L+N/2];
             if (group == item_group[item->name]) {
                 return true;
             }
@@ -41,7 +41,7 @@ FizItem* GraphView::create_element(const int &L, const int &T, const int &G, con
             return nullptr;
             }
        }
-            FizItem *item = fizitems[group][T+N/2][T+L+N-6];
+            FizItem *item = fizitems[group][T+N/2][T+L+N/2];
             item->name = name;
             item->symbol = symbol;
             item->level = sysgroup[group]->color;
@@ -53,7 +53,7 @@ FizItem* GraphView::create_element(const int &L, const int &T, const int &G, con
     }
 
    //??? main_view->AddFizItem(L, T, G, k);
-    FizItem *item = fizitems[group][T+N/2][T+L+N-6];
+    FizItem *item = fizitems[group][T+N/2][T+L+N/2];
     item->name = name;
     item->symbol = symbol;
     item->level = sysgroup[group]->color;
@@ -61,7 +61,7 @@ FizItem* GraphView::create_element(const int &L, const int &T, const int &G, con
     item->unit_of_measurement = uom;
     item->symbol_unit_of_measurement = suom;
     item_group[name] = group;
-    FizItem *it = main_view->out[T+N/2][T+L+N-6];
+    FizItem *it = main_view->out[T+N/2][T+L+N/2];
     it->visible = true;
     it->name = name;
     it->symbol = symbol;
@@ -131,6 +131,8 @@ void GraphView::contextMenuEvent(QContextMenuEvent *event)
     menu->exec(event->globalPos());
     return;
     }
+    L_click = select->L;
+    T_click = select->T;
     //Очистка прошлого меню выбора уровней
     if (level_menu != nullptr) {
         disconnect(level_menu, SIGNAL(triggered(QAction*)), this, SLOT(select_level(QAction*)));
@@ -159,12 +161,13 @@ void GraphView::contextMenuEvent(QContextMenuEvent *event)
     //Здесь нам нужно наполнить список для выбора других элементов
     bool add = false;
     foreach (QString level, sysgroup.keys()) {
-        QString item = fizitems[level][select->T+N/2][select->T+select->L+N-6]->name;
+        QString item = fizitems[level][select->T+N/2][select->T+select->L+N/2]->name;
         if (item_group[select->name] != level && item != "") {
             level_menu->addAction(item);
             add = true;
         }
     }
+    menu_element->addAction("Редактировать");
     menu_element->addAction(QIcon(":/pics/pics/delete.png"), "Удалить");
     //Коннект меню
     connect(menu_element, SIGNAL(triggered(QAction*)), SLOT(slotActivated(QAction*)));
@@ -314,10 +317,7 @@ void GraphView::mouseDoubleClickEvent(QMouseEvent *event)
 
   L_click = item->L;
   T_click = item->T;
-  if (item->name == "") //Если кликнули в пустую область, то добавляем новый элемент
-      change_elem = false;
-  else
-      change_elem = true; //Если же кликнули на существующий, то будем его изменять
+  change_elem = false;
   //Очищаем выделение элементов на сцене
   foreach (FizItem *item, selected_items)
       item->setSelect(false);
@@ -347,6 +347,8 @@ void GraphView::slotActivated(QAction *act)
 {
   QString choose = act->text().remove("&");
   if (choose == "Добавить") {
+
+      change_elem = false;
       AddElement *form = new AddElement;
       QPoint point = main_window->mapToGlobal(QPoint(main_view->pos().x() - 300,
                                               main_view->pos().y() + 50));
@@ -369,14 +371,30 @@ void GraphView::slotActivated(QAction *act)
      redo.clear();
      redo_action->setEnabled(false);
      select->RemoveCell();
-    }
+  }
+  else if (choose == "Редактировать" && select->name != "") {
+//     if (item->name == "") //Если кликнули в пустую область, то добавляем новый элемент
+//         change_elem = false;
+//     else
+         change_elem = true; // Изменение элемента при клике
+         //Очищаем выделение элементов на сцене
+         foreach (FizItem *item, selected_items) {
+             item->setSelect(false);
+         }
+         selected_items.clear();
+         AddElement *form = new AddElement;
+         QPoint point = main_window->mapToGlobal(QPoint(main_view->pos().x() - 300,
+                                                 main_view->pos().y() + 50));
+         form->move(point);
+         form->show();
+     }
 }
 
 void GraphView::select_level(QAction *act)
 {
    QString choose = act->text();
 
-   FizItem *item = fizitems[item_group.value(choose)][select->T+N/2][select->T+select->L+N-6];
+   FizItem *item = fizitems[item_group.value(choose)][select->T+N/2][select->T+select->L+N/2];
    select->assign(*item);
    select->update();
 }
@@ -385,7 +403,7 @@ void InitializeField::fill_line()
 {
     QVector<FizItem*> line;
     for (int j = 0; j < N; ++j) {
-        FizItem *it = main_view->AddFizItem(j-N/2-line_number+6, line_number-N/2);
+        FizItem *it = main_view->AddFizItem(j-line_number, line_number-N/2);
         line << it;
         it->setVisible(true); // (для отладки)
         //it->setFlags(QGraphicsItem::ItemIsSelectable);;

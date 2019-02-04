@@ -70,6 +70,7 @@ public:
         this->G = rhs.G;
         this->k = rhs.k;
         this->symbol = rhs.symbol;
+        this->value_c = rhs.value_c;
         this->unit_of_measurement = rhs.unit_of_measurement;
         this->symbol_unit_of_measurement = rhs.symbol_unit_of_measurement;
         this->pixmapOutdated = rhs.pixmapOutdated;

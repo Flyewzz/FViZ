@@ -104,7 +104,7 @@ void LowsSettings::on_color_button_clicked()
 {
     //Установка цвета для группы законов
     QColor temp;
-    temp = QColorDialog::getColor(temp, 0, tr("Цвет контура"));
+    temp = QColorDialog::getColor(temp, nullptr, tr("Цвет контура"));
     if (temp.isValid())
     {
         ch_color = temp;

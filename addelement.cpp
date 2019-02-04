@@ -41,7 +41,7 @@ AddElement::AddElement(QWidget *parent) :
     ui->l_coord->setValue(L_click);
     ui->t_coord->setValue(T_click);
     if (change_elem) {
-        remember_element = main_view->out[T_click+N/2][T_click+L_click+N-6];
+        remember_element = main_view->out[T_click+N/2][T_click+L_click+N/2];
         FizItem *&item = remember_element;
         ui->g_coord->setText(QString::number(item->G, 'g', 10));
         ui->k_coord->setText(QString::number(item->k, 'g', 10));
@@ -67,14 +67,14 @@ AddElement::~AddElement()
 void AddElement::on_pushButton_clicked()
 {
     if (ui->nameval->text() == "") {
-        QMessageBox::warning(0, "Незаполненное поле", "Заполните поле для названия величины!");
+        QMessageBox::warning(this, "Незаполненное поле", "Заполните поле для названия величины!");
         return;
     }
     if (!change_elem) { //Дубликация может быть только в случае создания нового элемента
         if (item_group.contains(ui->nameval->text())) {
             ui->nameval->clear();
             ui->nameval->setFocus();
-            QMessageBox::warning(0, "Дубликация величин", "Такая величина уже существует!");
+            QMessageBox::warning(this, "Дубликация величин", "Такая величина уже существует!");
             return;
          }
     }
@@ -99,7 +99,7 @@ void AddElement::on_pushButton_clicked()
         QString remember_suom = remember_element->symbol_unit_of_measurement;
         QString remember_group = item_group[remember_element->name];
         QColor remember_color = remember_element->level;
-        //main_view->out[T_click+N/2][T_click+L_click+N-6]->RemoveCell();
+        //main_view->out[T_click+N/2][T_click+L_click+N/2]->RemoveCell();
         main_view->remove_element(remember_element->name, L_click, T_click);
         remember_element = main_view->create_element(L, T, G, k,
                                   symbol, name, sys_c,
@@ -128,6 +128,7 @@ void AddElement::on_pushButton_clicked()
     }
     redo.clear();
     redo_action->setEnabled(false);
+    QMessageBox::information(this, "Физическая величина", "Величина успешно внесена в таблицу!");
 }
 
 void AddElement::on_comboBox_activated(const QString &arg1)

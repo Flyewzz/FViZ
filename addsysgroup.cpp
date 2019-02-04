@@ -55,7 +55,7 @@ void AddSysGroup::on_pushButton_2_clicked()
                 if (select->name == "" || !select->visible) {
                     continue;
                 }
-                FizItem *item = fizitems[item_group.value(select->name)][select->T+N/2][select->T+select->L+N-6];
+                FizItem *item = fizitems[item_group.value(select->name)][select->T+N/2][select->T+select->L+N/2];
                 select->assign(*item);
                 select->update();
             }

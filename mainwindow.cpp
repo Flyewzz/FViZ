@@ -85,7 +85,7 @@ MainWindow::MainWindow(QWidget *parent) :
         for (int i = 0; i < N; ++i) {
             QVector<FizItem*> line;
             for (int j = 0; j < N; ++j) {
-                FizItem *it = main_view->AddFizItem(j-N/2-i+6, i-N/2);
+                FizItem *it = main_view->AddFizItem(j-i, i-N/2);
                 line << it;
 //                it->setVisible(true); // (для отладки)
                 //it->setFlags(QGraphicsItem::ItemIsSelectable);

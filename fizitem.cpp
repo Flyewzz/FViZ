@@ -83,7 +83,7 @@ void FizItem::RemoveCell()
     //Единственный ли это блок?
     bool find = [=]() {
          foreach (QString level, sysgroup.keys()) {
-         FizItem *item = fizitems[level][T+N/2][T+L+N-6];
+         FizItem *item = fizitems[level][T+N/2][T+L+N/2];
          if (item->name != "" && item_group[item->name] != item_group[name]) return true;
      }
          return false;
@@ -95,7 +95,7 @@ void FizItem::RemoveCell()
 
     // !Немного доработать!
     if (!find) {
-    FizItem *it = fizitems[item_group[name]][T+N/2][T+L+N-6];
+    FizItem *it = fizitems[item_group[name]][T+N/2][T+L+N/2];
     item_group.remove(name);
     name = "";
     visible = false;
@@ -106,10 +106,10 @@ void FizItem::RemoveCell()
     return;
     }
     foreach (QString level, sysgroup.keys()) {
-    FizItem *item = fizitems[level][T+N/2][T+L+N-6];
+    FizItem *item = fizitems[level][T+N/2][T+L+N/2];
     if (item->name != "" && item_group[item->name] != item_group[name]) {
         //! Ошибка!
-      fizitems[item_group.value(name)][T+N/2][T+L+N-6]->name = "";
+      fizitems[item_group.value(name)][T+N/2][T+L+N/2]->name = "";
       item_group.remove(name);
       name = item->name;
       this->level = item->level;
