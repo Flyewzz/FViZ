@@ -68,7 +68,7 @@ void ListOfLows::on_pushButton_clicked()
                   << ui->var_3->currentText() << ui->var_4->currentText();
     lowsgrouplist[ui->groups->currentText()]->list << new Low(name, formula, description, params,
                                                         lowsgrouplist[ui->groups->currentText()]->color);
-    QMessageBox::information(nullptr, "Добавление закона", "Закон успешно добавлен в систему!");
+    QMessageBox::information(this, "Добавление закона", "Закон успешно добавлен в систему!");
 }
 
 void ListOfLows::on_pushButton_2_clicked()

@@ -103,7 +103,7 @@ void AddSysGroup::on_pushButton_4_clicked()
 {
     //Изменение цвета новой системной группы
     QColor temp;
-    temp = QColorDialog::getColor(temp, nullptr, tr("Цвет контура"));
+    temp = QColorDialog::getColor(temp, this, tr("Цвет контура"));
     if (temp.isValid())
     {
         color = temp;

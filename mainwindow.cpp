@@ -121,7 +121,7 @@ MainWindow::MainWindow(QWidget *parent) :
         work_file.setFileName(work_str);
         // На случай, если тестовый файл будет перемещен
         if (!work_file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QMessageBox::critical(nullptr, "Ошибка", "Файл не может быть открыт!");
+            QMessageBox::critical(this, "Ошибка", "Файл не может быть открыт!");
             return;
         }
         Open();
@@ -240,7 +240,7 @@ void MainWindow::Open()
     qDebug() << "N = " << check_number;
     if (check_number != N) {
         work_file.close();
-        QMessageBox::critical(nullptr, "Несоответствие размеров", "Размер сцены в файле"
+        QMessageBox::critical(this, "Несоответствие размеров", "Размер сцены в файле"
                                                             " отличается от требуемого!");
         return;
     }
@@ -426,7 +426,7 @@ void MainWindow::on_action_6_triggered()
     }
     work_file.setFileName(work_str);
     if (!work_file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::critical(nullptr, QString::fromUtf8(u8"Ошибка"), QString::fromUtf8(u8"Файл не может быть открыт!"));
+        QMessageBox::critical(this, QString::fromUtf8(u8"Ошибка"), QString::fromUtf8(u8"Файл не может быть открыт!"));
         return;
     }
     QFile currentFile(work_str);
@@ -446,18 +446,18 @@ void MainWindow::on_action_10_triggered()
     }
     work_file.setFileName(work_str);
     if (!work_file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::critical(nullptr, QString::fromUtf8(u8"Ошибка"), QString::fromUtf8(u8"Ошибка сохранения сцены!"));
+        QMessageBox::critical(this, QString::fromUtf8(u8"Ошибка"), QString::fromUtf8(u8"Ошибка сохранения сцены!"));
         return;
     }
     Save();
-    QMessageBox::information(nullptr, QString::fromUtf8(u8"Сохранение сцены"), QString::fromUtf8(u8"Сцена успешно загружена в файл!"));
+    QMessageBox::information(this, QString::fromUtf8(u8"Сохранение сцены"), QString::fromUtf8(u8"Сцена успешно загружена в файл!"));
 }
 
 
 void MainWindow::on_action_9_triggered()
 {
    if (!work_file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::critical(nullptr, QString::fromUtf8(u8"Ошибка"), QString::fromUtf8(u8"Ошибка сохранения сцены!"));
+        QMessageBox::critical(this, QString::fromUtf8(u8"Ошибка"), QString::fromUtf8(u8"Ошибка сохранения сцены!"));
         return;
    }
    Save();
@@ -466,7 +466,7 @@ void MainWindow::on_action_9_triggered()
 void MainWindow::on_action_12_triggered()
 {
     //Сохранение изображения сцены
-    QString str = QFileDialog::getSaveFileName(nullptr, QCoreApplication::applicationDirPath(),
+    QString str = QFileDialog::getSaveFileName(this, QCoreApplication::applicationDirPath(),
                                                "*.png" );
    if (str.isEmpty()) return;
    QPixmap pixmap = main_view->grab();

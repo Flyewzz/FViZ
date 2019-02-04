@@ -41,7 +41,7 @@ LowsSettings::~LowsSettings()
 
 void LowsSettings::on_toolButton_clicked()
 {
-    QMessageBox::information(nullptr, "", "Работает!");
+    QMessageBox::information(this, "", "Работает!");
 }
 
 void LowsSettings::on_pushButton_clicked()
@@ -49,7 +49,7 @@ void LowsSettings::on_pushButton_clicked()
 
     QString name = ui->group_name->text();
     if (name.length() == 0) {
-        QMessageBox::warning(0, "Ошибка", "Поле названия не может быть пустым!");
+        QMessageBox::warning(this, "Ошибка", "Поле названия не может быть пустым!");
         ui->group_name->setFocus();
         return;
     }
@@ -57,7 +57,7 @@ void LowsSettings::on_pushButton_clicked()
         //Проверка на дубликаты групп законов
         foreach (QString group_name, lowsgrouplist.keys())
             if (group_name == name) {
-                QMessageBox::warning(0, "Дубликация групп законов", "Такая группа законов уже существует!");
+                QMessageBox::warning(this, "Дубликация групп законов", "Такая группа законов уже существует!");
                 ui->group_name->clear();
                 ui->group_name->setFocus();
                 return;
@@ -71,7 +71,7 @@ void LowsSettings::on_pushButton_clicked()
     foreach(QString group_name, lowsgrouplist.keys()) {
         ui->comboBox->addItem(group_name);
     }
-    QMessageBox::information(nullptr, "Добавление группы законов", "Группа законов успешно добавлена!");
+    QMessageBox::information(this, "Добавление группы законов", "Группа законов успешно добавлена!");
     }
     else if (ui->pushButton->text() == "Изменить") {
         QString old_name = ui->comboBox->currentText();
@@ -92,7 +92,7 @@ void LowsSettings::on_pushButton_clicked()
       foreach(QString group_name, lowsgrouplist.keys()) {
           ui->comboBox->addItem(group_name);
       }
-      QMessageBox::information(nullptr, "Редактирование группы законов", "Группа законов успешно обновлена!");
+      QMessageBox::information(this, "Редактирование группы законов", "Группа законов успешно обновлена!");
       ui->pushButton->setText("Добавить");
       ui->group_name->clear();
       ui->group_name->setFocus();
@@ -104,7 +104,7 @@ void LowsSettings::on_color_button_clicked()
 {
     //Установка цвета для группы законов
     QColor temp;
-    temp = QColorDialog::getColor(temp, nullptr, tr("Цвет контура"));
+    temp = QColorDialog::getColor(temp, this, tr("Цвет контура"));
     if (temp.isValid())
     {
         ch_color = temp;
