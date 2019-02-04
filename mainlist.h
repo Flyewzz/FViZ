@@ -5,7 +5,7 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QCheckBox>
-#include "lowssettings.h"
+#include "lawssettings.h"
 
 namespace Ui {
 class MainList;

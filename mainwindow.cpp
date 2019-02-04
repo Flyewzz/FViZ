@@ -171,14 +171,14 @@ void MainWindow::ClearStruct() {
         fizitems.remove(level);
     }
     fizitems.clear(); //Финальная очистка структуры
-    foreach (QString group, lowsgrouplist.keys()) { //Перебираем все группы законов
-        foreach (Low *low, lowsgrouplist[group]->list) {
-            low->e.clear(); //Очищаем названия величин для каждого закона
-            delete low; //Удаляем текущий закон
+    foreach (QString group, lawsgrouplist.keys()) { //Перебираем все группы законов
+        foreach (Law *law, lawsgrouplist[group]->list) {
+            law->e.clear(); //Очищаем названия величин для каждого закона
+            delete law; //Удаляем текущий закон
         }
-        delete lowsgrouplist[group]; //Удаляем текущую группу законов
+        delete lawsgrouplist[group]; //Удаляем текущую группу законов
     }
-    lowsgrouplist.clear(); //Финальная очистка структуры для хранения группы законов
+    lawsgrouplist.clear(); //Финальная очистка структуры для хранения группы законов
 }
 
 void MainWindow::Save()
@@ -215,17 +215,17 @@ void MainWindow::Save()
             work_stream << cell_name << item_group[cell_name];
         }
         //Запоминаем количество групп законов и их характеристики
-        int count_of_lowsgroups = lowsgrouplist.size();
-        //qDebug() << "Количество групп законов: " << count_of_lowsgroups;
-        work_stream << count_of_lowsgroups;
-        foreach (QString group_name, lowsgrouplist.keys()) {
+        int count_of_lawsgroups = lawsgrouplist.size();
+        //qDebug() << "Количество групп законов: " << count_of_lawsgroups;
+        work_stream << count_of_lawsgroups;
+        foreach (QString group_name, lawsgrouplist.keys()) {
             work_stream << group_name; //Записываем имя группы закона
-            work_stream << lowsgrouplist[group_name]->color; //Записываем ее цвет
+            work_stream << lawsgrouplist[group_name]->color; //Записываем ее цвет
             //Записываем количество законов данной группы
-            int lows_count = lowsgrouplist[group_name]->list.length();
-            work_stream << lows_count;
-            foreach (Low *low, lowsgrouplist[group_name]->list) {
-               work_stream << *low; //Записываем текущий закон (см. перегрузки lowssettings.h и .cpp)
+            int laws_count = lawsgrouplist[group_name]->list.length();
+            work_stream << laws_count;
+            foreach (Law *law, lawsgrouplist[group_name]->list) {
+               work_stream << *law; //Записываем текущий закон (см. перегрузки lawssettings.h и .cpp)
             }
         }
         work_file.close();
@@ -253,15 +253,15 @@ void MainWindow::Open()
     }
     sysgroup.clear();
     item_group.clear();
-    foreach (QString group_name, lowsgrouplist.keys()) {
+    foreach (QString group_name, lawsgrouplist.keys()) {
 
-        foreach (Low *low, lowsgrouplist[group_name]->list) {
-            delete low;
+        foreach (Law *law, lawsgrouplist[group_name]->list) {
+            delete law;
         }
-        lowsgrouplist[group_name]->list.clear();
-        lowsgrouplist.remove(group_name);
+        lawsgrouplist[group_name]->list.clear();
+        lawsgrouplist.remove(group_name);
     }
-    lowsgrouplist.clear(); //Очистка старого списка групп законов
+    lawsgrouplist.clear(); //Очистка старого списка групп законов
 
     ///Осторожно! Не забыть, что настоящее N должно быть больше
         //qDebug() << "Этап инициализации поля";
@@ -305,25 +305,25 @@ void MainWindow::Open()
       //  qDebug() << "Имя: " << cell_name << " Системная группа: " << item_group[cell_name];
     }
     //Количество групп законов и их характеристики
-    int count_of_lowsgroups;
-    work_stream >> count_of_lowsgroups;
-    //qDebug() << "Количество групп законов: " << count_of_lowsgroups;
-    for (int i = 0; i < count_of_lowsgroups; ++i) {
+    int count_of_lawsgroups;
+    work_stream >> count_of_lawsgroups;
+    //qDebug() << "Количество групп законов: " << count_of_lawsgroups;
+    for (int i = 0; i < count_of_lawsgroups; ++i) {
         QString group_name;
         work_stream >> group_name; //Имя группы закона
         QColor color;
         work_stream >> color; //Записываем ее цвет
         //Количество законов данной группы
-        int lows_count;
-        work_stream >> lows_count;
-       // qDebug() << "Количество законов:" << lows_count;
-        QList<Low*> list;
-        for (int j = 0; j < lows_count; ++j) {
-           Low *low = new Low;
-           work_stream >> *low; //Записываем текущий закон (см. перегрузки lowssettings.h и .cpp)
-           list << low;
+        int laws_count;
+        work_stream >> laws_count;
+       // qDebug() << "Количество законов:" << laws_count;
+        QList<Law*> list;
+        for (int j = 0; j < laws_count; ++j) {
+           Law *law = new Law;
+           work_stream >> *law; //Записываем текущий закон (см. перегрузки lawssettings.h и .cpp)
+           list << law;
         }
-       lowsgrouplist[group_name] = new LowsGroup(color, list);
+       lawsgrouplist[group_name] = new LawsGroup(color, list);
     }
     work_file.close();
     main_view->AllUpdate();
@@ -475,14 +475,13 @@ void MainWindow::on_action_12_triggered()
 
 void MainWindow::on_action_5_triggered()
 {
-    LowsSettings *w = new LowsSettings;
+    LawsSettings *w = new LawsSettings;
     w->show();
 }
 
 void MainWindow::on_action_11_triggered()
 {
-    //!!! ПЕРЕДЕЛАТЬ НАЗВАНИЕ listoflows !!!
-    ListOfLows *y = new ListOfLows;
+    ListOfLaws *y = new ListOfLaws;
     y->show();
 }
 

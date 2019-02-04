@@ -6,7 +6,7 @@
 #include <QList>
 
 //Закон
-struct Low
+struct Law
 {
     QString name; //Название закона
     QString formula; //Формула
@@ -15,37 +15,37 @@ struct Low
     QVector<QString> e; // 0-3 (1-4)
     //###########################
     QColor color; //Цвет
-    Low(QString &nam, QString formula, QString desc, const QVector<QString> &vec, QColor &col) : name(nam), formula(formula),
+    Law(QString &nam, QString formula, QString desc, const QVector<QString> &vec, QColor &col) : name(nam), formula(formula),
        description(desc), e(vec), color(col){}
-    Low(){} //Пустой конструктор (для добавления законов из файла)
+    Law(){} //Пустой конструктор (для добавления законов из файла)
 };
 
 //Перегрузки для записи/считывания законов из файла
-QDataStream& operator <<(QDataStream &stream, const Low &low);
-QDataStream& operator >>(QDataStream &stream, Low &low);
+QDataStream& operator <<(QDataStream &stream, const Law &law);
+QDataStream& operator >>(QDataStream &stream, Law &law);
 
 //Группа законов
-struct LowsGroup {
+struct LawsGroup {
    QColor color; //Цвет, характеризующий данную группу
-   QList<Low*> list; //Список законов, принадлежащий данной группе
-   LowsGroup(const QColor &col) : color(col){}
-   LowsGroup(QColor &col, const QList<Low*> &list) : color(col), list(list){}
+   QList<Law*> list; //Список законов, принадлежащий данной группе
+   LawsGroup(const QColor &col) : color(col){}
+   LawsGroup(QColor &col, const QList<Law*> &list) : color(col), list(list){}
 };
 
-extern QHash<QString, LowsGroup*> lowsgrouplist; //Список всех групп законов
+extern QHash<QString, LawsGroup*> lawsgrouplist; //Список всех групп законов
 
 
 namespace Ui {
-class LowsSettings;
+class LawsSettings;
 }
 
-class LowsSettings : public QWidget
+class LawsSettings : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit LowsSettings(QWidget *parent = nullptr);
-    ~LowsSettings();
+    explicit LawsSettings(QWidget *parent = nullptr);
+    ~LawsSettings();
 
 private slots:
     void on_toolButton_clicked();
@@ -59,7 +59,7 @@ private slots:
     void on_comboBox_activated(const QString &arg1);
 
 private:
-    Ui::LowsSettings *ui;
+    Ui::LawsSettings *ui;
 };
 
 #endif // LOWSSETTINGS_H

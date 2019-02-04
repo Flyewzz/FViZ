@@ -11,8 +11,8 @@
 #include "about.h"
 #include <QLabel>
 #include "addsysgroup.h"
-#include "listoflows.h"
-#include "lowssettings.h"
+#include "listoflaws.h"
+#include "lawssettings.h"
 #include "mainlist.h"
 #include <QMessageBox>
 #include <QWebEngineView>

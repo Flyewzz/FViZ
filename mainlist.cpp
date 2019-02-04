@@ -12,9 +12,9 @@ void MainList::Fill()
         QTreeWidgetItem *item = new QTreeWidgetItem;
         item->setText(0, group_name);
         ui->tree->addTopLevelItem(item);
-        foreach (Low *low, lowsgrouplist[group_name]->list) {
+        foreach (Law *law, lawsgrouplist[group_name]->list) {
             QTreeWidgetItem *child_item = new QTreeWidgetItem;
-            child_item->setText(0, low->name);
+            child_item->setText(0, law->name);
             item->addChild(child_item);
         }
   }
@@ -27,7 +27,7 @@ MainList::MainList(QWidget *parent) :
     ui->setupUi(this);
     ui->remove_button->setIcon(QIcon(QApplication::style()->standardIcon(QStyle::SP_TrashIcon)));
     //Заполнение общего списка групп законов
-    foreach (QString group_name, lowsgrouplist.keys()) {
+    foreach (QString group_name, lawsgrouplist.keys()) {
         QListWidgetItem* it = new QListWidgetItem(group_name, ui->listgroups);
         it->setFlags(it->flags() | Qt::ItemIsUserCheckable); // set checkable flag
         connect(ui->listgroups, &QListWidget::itemChanged, [this](){Fill();});
@@ -43,20 +43,20 @@ MainList::MainList(QWidget *parent) :
         //Название выделенного закона
         QString name = ui->tree->currentItem()->text(0);
         select_group = group; //Устанавливаем группу
-        name_low = name;
-        Low *find_low = [=]() {
-            foreach (Low *low, lowsgrouplist[select_group]->list) {
-                if (low->name == name_low)
-                    return low;
+        name_law = name;
+        Law *find_law = [=]() {
+            foreach (Law *law, lawsgrouplist[select_group]->list) {
+                if (law->name == name_law)
+                    return law;
             }
         }();
-        description_low = find_low->description;
-        formula_low = find_low->formula;
-        k1 = find_low->e[0]; k2 = find_low->e[1];
-        k3 = find_low->e[2]; k4 = find_low->e[3];
+        description_law = find_law->description;
+        formula_law = find_law->formula;
+        k1 = find_law->e[0]; k2 = find_law->e[1];
+        k3 = find_law->e[2]; k4 = find_law->e[3];
         //#######################################################
         //Отображение закона
-        ListOfLows *w = new ListOfLows;
+        ListOfLaws *w = new ListOfLaws;
         w->show();
       }
     });

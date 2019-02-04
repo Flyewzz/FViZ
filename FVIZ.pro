@@ -41,8 +41,8 @@ SOURCES += \
     addelement.cpp \
     about.cpp \
     addsysgroup.cpp \
-    listoflows.cpp \
-    lowssettings.cpp \
+    listoflaws.cpp \
+    lawssettings.cpp \
     mainlist.cpp \
     commands.cpp \
     general_settings.cpp \
@@ -55,8 +55,8 @@ HEADERS += \
     addelement.h \
     about.h \
     addsysgroup.h \
-    listoflows.h \
-    lowssettings.h \
+    listoflaws.h \
+    lawssettings.h \
     mainlist.h \
     commands.h \
     general_settings.h \
@@ -67,8 +67,8 @@ FORMS += \
     addelement.ui \
     about.ui \
     addsysgroup.ui \
-    listoflows.ui \
-    lowssettings.ui \
+    listoflaws.ui \
+    lawssettings.ui \
     mainlist.ui \
     general_settings.ui
 

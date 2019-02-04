@@ -244,27 +244,27 @@ void GraphView::mousePressEvent(QMouseEvent *event)
                 for (int i = 0; i < selected_items.length(); ++i)
                     polygon << QPointF(selected_items[i]->x, selected_items[i]->y);
                 QPen pen;
-                Low *find_low = [=]() {
+                Law *find_law = [=]() {
                     QVector<QString> vec;
                     vec << e1->getName() << e3->getName() << e2->getName() << e4->getName();
-                    foreach (QString group, lowsgrouplist.keys()) {
-                        foreach (Low *low, lowsgrouplist[group]->list) {
-                            if (vec == low->e) {
+                    foreach (QString group, lawsgrouplist.keys()) {
+                        foreach (Law *law, lawsgrouplist[group]->list) {
+                            if (vec == law->e) {
                                 select_group = group;
                                 vec.clear();
-                                return low;
+                                return law;
                             }
                         }
                     }
                     vec.clear();
-                    return static_cast<Low*>(nullptr);
+                    return static_cast<Law*>(nullptr);
                 }();
-               if (find_low == nullptr) pen.setColor(Qt::black);
+               if (find_law == nullptr) pen.setColor(Qt::black);
                else {
-                   pen.setColor(find_low->color);
-                   name_low = find_low->name;
-                   description_low = find_low->description;
-                   formula_low = find_low->formula;
+                   pen.setColor(find_law->color);
+                   name_law = find_law->name;
+                   description_law = find_law->description;
+                   formula_law = find_law->formula;
                }
                 pen.setWidth(4);
              ittt = scene.addPolygon(polygon, pen);
@@ -274,7 +274,7 @@ void GraphView::mousePressEvent(QMouseEvent *event)
              timer->setInterval(800);
              timer->start();
              connect(timer, &QTimer::timeout, [timer](){
-             ListOfLows *w = new ListOfLows;
+             ListOfLaws *w = new ListOfLaws;
              w->show();
              timer->stop();
              delete timer;
