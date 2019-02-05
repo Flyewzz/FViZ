@@ -5,6 +5,7 @@
 #include <QJsonDocument>
 #include <QStringList>
 #include <QTextStream>
+#include <QStringLiteral>
 
 // Rendering is performed in QWebEngineView with KaTeX
 //
@@ -12,7 +13,7 @@
 // Then view's HTML is set to generated source
 //
 // HTML page exposes window.renderFormula, which accepts formula string,
-// and calls window.print when formula is rendered.
+// and sets document.title to TitleDone when formula is rendered.
 //
 // Task queue with callbacks is used to render formulas one at a time
 //
@@ -22,11 +23,14 @@
 // actual rendering in four steps:
 //   1. "renderFormula" is called via runJavaScript
 //   2. Formula is rendered
-//   3. JS calls window.print, which ends up calling printRequested
-//   4. In printRequested pixmap of the view is grabbed and passed to
+//   3. JS sets title to TitleDone, which ends up calling titleChanged
+//   4. In titleChanged pixmap of the view is grabbed and passed to
 //   the callback
 
 namespace {
+
+static const auto TitleDone = QStringLiteral("Rendered");
+
 // Utility function to read text file from resources
 QString readTextFile(const QString& filename) {
     QFile f(filename);
@@ -60,8 +64,9 @@ QString GetHTML() {
     QString katexJS = readTextFile(":/katex/katex.js");
 
     return index
-        .replace("%katex_js%", katexJS)
-        .replace("%katex_css%", katexCSS);
+        .replace("%title_done%", TitleDone)
+        .replace("%katex_css%", katexCSS)
+        .replace("%katex_js%", katexJS);
 }
 }
 
@@ -69,7 +74,7 @@ RenderFizitem::RenderFizitem(QObject *parent, QWidget *wparent)
     : QObject(parent)
     , _view(new QWebEngineView(wparent))
 {
-    connect(_view->page(), &QWebEnginePage::printRequested, this, &RenderFizitem::printRequested);
+    connect(_view->page(), &QWebEnginePage::titleChanged, this, &RenderFizitem::titleChanged);
     connect(_view->page(), &QWebEnginePage::loadFinished, this, &RenderFizitem::loadFinished);
     _view->setAttribute(Qt::WA_TranslucentBackground);
     _view->page()->setBackgroundColor(Qt::transparent);
@@ -79,7 +84,8 @@ RenderFizitem::RenderFizitem(QObject *parent, QWidget *wparent)
     _view->setHtml(GetHTML());
 };
 
-void RenderFizitem::printRequested() {
+void RenderFizitem::titleChanged(const QString &title) {
+    if (title != TitleDone) return;
     // Preserve callback
     const auto callback = _viewTask.callback;
     QPixmap pixmap = _view->grab();

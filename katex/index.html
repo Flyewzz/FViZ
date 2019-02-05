@@ -38,12 +38,15 @@
         var container = document.getElementById('formula_container');
         
         function renderFormula(formula) {
+            document.title = "rendering";
             container.innerHTML = '$$' + formula + '$$';
             renderMathInElement(container, {strict: false});
             RAF(function(){
                 RIC(function(){
                     RAF(function(){
-                        RIC(window.print);
+                        RIC(function() {
+                            document.title = "%title_done%";
+                        });
                     });
                 });
             })

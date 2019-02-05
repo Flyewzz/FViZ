@@ -48,7 +48,7 @@ void ProcessTask(const Task& task);
 
 private slots:
 void loadFinished(bool);
-void printRequested();
+void titleChanged(const QString&);
 
 private:
 // _tasks, _task_counter and _firing lock
