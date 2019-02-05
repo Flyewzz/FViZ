@@ -88,6 +88,21 @@
         </property>
        </spacer>
       </item>
+      <item>
+       <widget class="QLabel" name="label_path">
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::Box</enum>
+        </property>
+        <property name="text">
+         <string>Путь к текущему файлу</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
    </layout>

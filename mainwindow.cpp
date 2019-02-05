@@ -17,6 +17,7 @@ GraphView *main_view;
 QLabel *position;
 QLabel *Gk;
 QLabel *name_izm;
+
 //Файл для взаимодействия с базой данных элементов
 QFile work_file;
 //Файловый поток ввода-вывода
@@ -404,6 +405,7 @@ void MainWindow::on_action_6_triggered()
     QFile currentFile(work_str);
     QFileInfo fileinfo(currentFile.fileName());
     setWindowTitle(QString::fromUtf8(u8"ФВиЗ 1.0 (Открыт ") + fileinfo.fileName() + ')');
+    ui->label_path->setText(fileinfo.absoluteFilePath());
     Open();
 }
 
