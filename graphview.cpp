@@ -2,6 +2,7 @@
 #include <QDebug>
 #include "render_fizitem.h"
 #include "commands.h"
+#include <algorithm>
 
 int L_click = 0;
 int T_click = L_click;
@@ -219,14 +220,14 @@ void GraphView::mousePressEvent(QMouseEvent *event)
 
     size_t select_size = selected_items.size();
     if (select_size == 3 || select_size == 4) {
-        qSort(selected_items.begin(), selected_items.end(),
+        std::sort(selected_items.begin(), selected_items.end(),
             [](const FizItem *a, const FizItem *b) {
                 if (a->L == b->L) return a->T > b->T;
                 return a->L > b->L;
             }
         );
         FizItem *&e1 = selected_items[0]; //Находим левый верхний элемент
-        qSort(selected_items.begin(), selected_items.end(),
+        std::sort(selected_items.begin() + 1, selected_items.end(),
             [](const FizItem *a, const FizItem *b) {
                 if (a->L == b->L) return a->T < b->T;
                 return a->L < b->L;
