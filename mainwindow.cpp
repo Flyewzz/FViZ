@@ -13,7 +13,6 @@ QString scroll_hide = "<style type='text/css'>"
         "    overflow:hidden;"
        " }"
        "</style>";
-double gX, gY;
 GraphView *main_view;
 QLabel *position;
 QLabel *Gk;
@@ -69,11 +68,9 @@ MainWindow::MainWindow(QWidget *parent) :
     //Настройка меню "Сохранить"
     ui->action_9->setIcon(QIcon(QApplication::style()->standardIcon(QStyle::SP_DialogSaveButton)));
     //#############################################################################################
-    gX = main_view->width()/2.0 + 1400;
-    gY = main_view->height()/2.0 + 1300;
     //Доделать расчет центрирования L^0T^0
-    main_view->horizontalScrollBar()->setSliderPosition(main_view->width()/2.0 + 1000.0);
-    main_view->verticalScrollBar()->setSliderPosition(main_view->height()/2.0 + 800.0);
+    main_view->horizontalScrollBar()->setSliderPosition(main_view->width()/2);
+    main_view->verticalScrollBar()->setSliderPosition(main_view->height()/2);
     change = false;
     /*
     CreateSysGroup("Кинематические величины", 0, 0, Qt::red);
@@ -81,38 +78,17 @@ MainWindow::MainWindow(QWidget *parent) :
     CreateSysGroup("Электромеханические величины", -1, 0, Qt::darkCyan);
     */
     main_view->setInteractive(true);
-        for (int i = 0; i < N; ++i) {
-            QVector<FizItem*> line;
-            for (int j = 0; j < N; ++j) {
-                FizItem *it = main_view->AddFizItem(j-i, i-N/2);
-                line << it;
+    for (int i = 0; i < N; ++i) {
+        QVector<FizItem*> line;
+        for (int j = 0; j < N; ++j) {
+            FizItem *it = main_view->AddFizItem(j-i, i-N/2);
+            line << it;
 //                it->setVisible(true); // (для отладки)
-                //it->setFlags(QGraphicsItem::ItemIsSelectable);
-              // mutex.lock();
-                gX += 59;
-                gY -= 88;
-               // mutex.unlock();
-            }
-           // mutex.lock(); //Блокируем вывод на форму, пока не добавили созданные элементы в текущем потоке
-            main_view->out << line;
-            line.clear();
-            gX -= 59 * N;
-            gY += 88 * N;
-            /*
-            gX -= 59;
-            gY -= 88;
-            */
-            gX -= 119;
-           // mutex.unlock();
-            /*
-          QThread *thread = new QThread;
-          InitializeField init(i);
-          connect(thread, SIGNAL(started()), &init, SLOT(fill_line()));
-          connect(&init, SIGNAL(finish()), thread, SLOT(terminate()));
-          init.moveToThread(thread);
-          thread->start();
-          */
         }
+       // mutex.lock(); //Блокируем вывод на форму, пока не добавили созданные элементы в текущем потоке
+        main_view->out << line;
+        line.clear();
+    }
         /*
         //  ################(для отладки) ##################################
         work_str = "/Users/igor/Desktop/Программа Чуев/Супер.fviz";
@@ -374,7 +350,7 @@ void CreateSysGroup(const QString &name, const int &G, const int &k, const QColo
     QVector<FizItem*> line;
     for (int i = 0; i < N; ++i) {
         for (int j = 0; j < N; ++j) {
-            FizItem *elem = new FizItem(0, 0, j-N/2, i-N/2);
+            FizItem *elem = new FizItem(j-N/2, i-N/2);
             elem->setLevel(G, k);
             line << elem;
         }

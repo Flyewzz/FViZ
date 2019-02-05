@@ -9,8 +9,7 @@ FizItem& FizItem::operator =(const FizItem &another)
     T = another.T;
     G = another.G;
     k = another.k;
-    x = another.x;
-    y = another.y;
+
     unit_of_measurement = another.unit_of_measurement;
     symbol_unit_of_measurement = another.symbol_unit_of_measurement;
     pixmapOutdated = another.pixmapOutdated;
@@ -20,8 +19,8 @@ FizItem& FizItem::operator =(const FizItem &another)
     return *this;
 }
 
-FizItem::FizItem(const qreal &x1, const qreal &y1, const int &l, const int &t,
-                 const QColor &col) :x(x1), y(y1), L(l), T(t), level(col)
+FizItem::FizItem(const int l, const int t,
+                 const QColor &col) : L(l), T(t), level(col)
 {
     name = "";
     visible = false;
@@ -37,40 +36,56 @@ FizItem::~FizItem()
 void FizItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     if (!visible) return; //Элемент остается пустым, если информация о нем не заполнена
-        painter->save();
-        if (selected)
-            painter->setPen(QPen(Qt::red, 2, Qt::DashLine));
-        else
-            painter->setPen(QPen(Qt::black, 1, Qt::SolidLine));
 
-        const unsigned int n = 6;
-        QPolygonF polygon;
-        for (unsigned int i = 0; i < n; i++) {
-            qreal fAngle = 2 * 3.14 * i / n;
-            qreal x1 = x + sin(fAngle) * 65;
-            qreal y1 = y - cos(fAngle) * 55;
-            polygon << QPointF(x1, y1);
-        }
-        painter->setBrush(QBrush(level));
-        painter->drawPolygon(polygon);
-        if (name != "") {
-            if (pixmapOutdated) {
-                if (renderRequest != 0) {
-                    renderer->Cancel(renderRequest);
-                }
-                renderRequest = renderer->Render(this, QSize(110, 55), [=](const QPixmap &pixmap){
+    painter->save();
+
+    if (selected)
+        painter->setPen(QPen(Qt::red, 2, Qt::DashLine));
+    else
+        painter->setPen(QPen(Qt::black, 1, Qt::SolidLine));
+
+    painter->setBrush(QBrush(level));
+    painter->drawPolygon(boundingPolygon());
+
+    if (name != "") {
+        if (pixmapOutdated) {
+            if (renderRequest == 0) {
+                renderRequest = renderer->Render(this, QSize(kTextSizeX, kTextSizeY), kTextScale, [=](const QPixmap &pixmap) {
                     setPixmap(pixmap);
                     renderRequest = 0;
-                    emit update();
+                    update();
                 });
-            } else {
-                painter->drawPixmap(x - 110/2, y - 60/2, cachedPixmap);
             }
+        } else {
+            painter->drawPixmap(xPos() - kTextSizeX/2, yPos() - kTextSizeY/2, cachedPixmap);
         }
-        painter->setFont(QFont("Times", 12, QFont::Normal));
-        painter->restore();
+    }
+
+    painter->restore();
 }
 
+void FizItem::invalidatePixmap() {
+    if (renderRequest != 0) {
+        renderer->Cancel(renderRequest);
+        renderRequest = 0;
+    }
+    pixmapOutdated = true;
+}
+
+QPolygon FizItem::boundingPolygon() const {
+    QPolygon polygon;
+    const int x = xPos();
+    const int y = yPos();
+
+    for (int i = 0; i != kPolygonN; ++i) {
+        qreal fAngle = 2 * 3.14 * i / kPolygonN;
+        int x1 = int(x + sin(fAngle) * kItemSizeX/2);
+        int y1 = int(y - cos(fAngle) * kItemSizeY/2);
+        polygon << QPoint(x1, y1);
+    }
+
+    return polygon;
+}
 
 void FizItem::setLevel(const int &a, const int &b)
 {
@@ -128,39 +143,27 @@ QDataStream &operator << (QDataStream &stream, const FizItem &elem)
     stream << elem.name << elem.symbol << elem.unit_of_measurement
            << elem.symbol_unit_of_measurement << elem.value_c <<
               elem.L << elem.T << elem.G << elem.k
-           << elem.level << elem.visible << elem.x << elem.y;
-    //elem.x и elem.y ?
+           << elem.level << elem.visible
+           // For backwards compat
+           << elem.xPos() << elem.yPos();
+
     return stream;
 }
 
 QDataStream &operator >>(QDataStream &stream, FizItem &elem)
 {
+    int x=0, y=0;
     stream >> elem.name >> elem.symbol >> elem.unit_of_measurement
             >> elem.symbol_unit_of_measurement >> elem.value_c
             >> elem.L >> elem.T >> elem.G >> elem.k
-           >> elem.level >> elem.visible >> elem.x >> elem.y;
+           >> elem.level >> elem.visible
+           // For backwards compat
+           >> x >> y;
     return stream;
 }
 void FizItem::ClearCell()
 {
     visible = false;
+    selected = false;
     name = "";
-}
-
-void FizItem::setVisible(const bool &v)
-{
-    visible = v;
-}
-
-void FizItem::setSelect(const bool &flag)
-{
-    selected = flag;
-    update();
-}
-
-bool FizItem::Select()
-{
-    selected = !selected;
-    update();
-    return selected;
 }

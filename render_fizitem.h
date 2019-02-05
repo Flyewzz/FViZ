@@ -26,7 +26,7 @@ RenderFizitem(QObject *parent, QWidget *wparent);
 
 using callback_t = std::function<void (const QPixmap&)>;
 
-quint64 Render(FizItem* item, QSize page_size, callback_t callback);
+quint64 Render(FizItem* item, QSize page_size, double page_scale, callback_t callback);
 bool Cancel(quint64 task_id);
 void Fire();
 
@@ -34,6 +34,7 @@ private:
 struct Task {
 	FizItem* item = nullptr;
 	QSize page_size{};
+	double page_scale = 1;
 	callback_t callback = nullptr;
 	quint64 task_id = 0;
 };

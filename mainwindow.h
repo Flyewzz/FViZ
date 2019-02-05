@@ -36,7 +36,6 @@ extern QString scr;
 extern QString scroll_hide;
 extern int choose;
 extern int gL, gT;
-extern double gX, gY;
 extern int N; //Размеры рабочей области (LT)
 extern QLabel *position;
 extern QLabel *Gk;

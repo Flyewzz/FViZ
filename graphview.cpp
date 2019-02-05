@@ -9,10 +9,9 @@ QHash<QString, QVector<QVector<FizItem*>>> fizitems;
 //Соответствие названия величины и названия ее системной группы
 QHash<QString, QString> item_group;
 bool change;
-FizItem *ModScene::addFizItem(const int &x, const int &y,
-                              const int &l, const int &t, const QColor &col)
+FizItem *ModScene::addFizItem(const int l, const int t, const QColor &col)
 {
-    FizItem *item = new FizItem(x, y, l, t, col);
+    FizItem *item = new FizItem(l, t, col);
     this->addItem(item);
     //Возврат созданной ячейки
     return item;
@@ -88,7 +87,7 @@ void GraphView::remove_element(const QString &name, const int &L, const int &T)
 FizItem* GraphView::AddFizItem(const int &L, const int &T)
 {
 
-    FizItem *item = scene.addFizItem(gX, gY, L, T, Qt::cyan);
+    FizItem *item = scene.addFizItem(L, T, Qt::cyan);
    // out[L+N/2][T+N/2] = scene.addFizItem(gX, gY, L, T, Qt::cyan);
     return item;
 }
@@ -252,7 +251,7 @@ void GraphView::mousePressEvent(QMouseEvent *event)
         e3 = temp;
         // Строим параллелограмм правильно (!)
         for (int i = 0; i < selected_items.length(); ++i) {
-            polygon << QPointF(selected_items[i]->x, selected_items[i]->y);
+            polygon << QPointF(selected_items[i]->xPos(), selected_items[i]->yPos());
         }
         QPen pen;
         Law *find_law = [=]() {
@@ -449,19 +448,10 @@ void InitializeField::fill_line()
         line << it;
         it->setVisible(true); // (для отладки)
         //it->setFlags(QGraphicsItem::ItemIsSelectable);;
-        gX += 59;
-        gY -= 88;
 
     }
      //Блокируем вывод на форму, пока не добавили созданные элементы в текущем потоке
     main_view->out << line;
     line.clear();
-    gX -= 59 * N;
-    gY += 88 * N;
-    /*
-    gX -= 59;
-    gY -= 88;
-    */
-    gX -= 119;
     emit finished(); //Работа завершена
 }

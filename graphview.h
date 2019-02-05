@@ -30,8 +30,7 @@ class ModScene : public QGraphicsScene
   public:
     explicit ModScene(QWidget *pwrt = nullptr) : QGraphicsScene(pwrt){}
     //Функция для удобного добавления элемента на поле
-    FizItem* addFizItem(const int &x, const int &y,
-                              const int &l, const int &t, const QColor &col);
+    FizItem* addFizItem(const int l, const int t, const QColor &col);
 };
 
 //Класс для первоначального рисования и инициализации поля (работает в многопоточном режиме)
