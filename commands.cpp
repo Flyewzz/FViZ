@@ -15,7 +15,8 @@ void SyncUI() {
 
 } // anonymous namespace
 
-void AddUndoCommand(Command* cmd) {
+namespace Commands {
+void AddUndo(Command* cmd) {
     commandStacksLock.lock();
 
     if (cmd != nullptr) {
@@ -33,7 +34,7 @@ void AddUndoCommand(Command* cmd) {
     commandStacksLock.unlock();
 }
 
-void AddRedoCommand(Command* cmd) {
+void AddRedo(Command* cmd) {
     commandStacksLock.lock();
 
     if (cmd != nullptr) {
@@ -44,7 +45,7 @@ void AddRedoCommand(Command* cmd) {
     commandStacksLock.unlock();
 }
 
-Command* PopUndoCommand() {
+Command* PopUndo() {
     commandStacksLock.lock();
 
     Command *cmd = nullptr;
@@ -57,7 +58,7 @@ Command* PopUndoCommand() {
     return cmd;
 }
 
-Command* PopRedoCommand() {
+Command* PopRedo() {
     commandStacksLock.lock();
 
     Command *cmd = nullptr;
@@ -69,6 +70,24 @@ Command* PopRedoCommand() {
     commandStacksLock.unlock();
     return cmd;
 }
+
+void Clear() {
+    commandStacksLock.lock();
+    if (!undo.empty()) {
+        for (const auto cmd : undo) {
+            delete cmd;
+        }
+        undo.clear();
+    }
+    if (!redo.empty()) {
+        for (const auto cmd : redo) {
+            delete cmd;
+        }
+        redo.clear();
+    }
+    commandStacksLock.unlock();
+}
+} // namespace Commands
 
 QString Command_Element::createLogs()
 {
@@ -83,13 +102,13 @@ void Command_Element::execute()
             main_view->create_element(L, T, G, k,
                                   symbol, name, sys_c,
                                   uom, suom, group, color);
-            AddRedoCommand(new Command_Element(L, T, G, k,
+            Commands::AddRedo(new Command_Element(L, T, G, k,
                                     symbol, name, sys_c,
                                     uom, suom,
                                     item_group[name], color, -1, 1));
     }
     else if  (flag == FlagState::REMOVE) {
-        AddRedoCommand(new Command_Element(L, T, G, k,
+        Commands::AddRedo(new Command_Element(L, T, G, k,
                                     symbol, name, sys_c,
                                     uom, suom,
                                     item_group[name], color, 1, 1));
@@ -111,7 +130,7 @@ void Command_Element::execute()
             _item = main_view->create_element(L, T, G, k,
                                   symbol, name, sys_c,
                                   uom, suom, group, color);
-            AddRedoCommand(new Command_Element(remember_L, remember_T,
+            Commands::AddRedo(new Command_Element(remember_L, remember_T,
                                     remember_G, remember_k,
                                     remember_symbol, remember_name,
                                     remember_sys_c,
@@ -126,13 +145,13 @@ void Command_Element::execute()
             main_view->create_element(L, T, G, k,
                                       symbol, name, sys_c,
                                       uom, suom, group, color);
-            AddUndoCommand(new Command_Element(L, T, G, k,
+            Commands::AddUndo(new Command_Element(L, T, G, k,
                                         symbol, name, sys_c,
                                         uom, suom,
                                         item_group[name], color, -1));
         }
         else if  (flag == FlagState::REMOVE) {
-            AddUndoCommand(new Command_Element(L, T, G, k,
+            Commands::AddUndo(new Command_Element(L, T, G, k,
                                         symbol, name, sys_c,
                                         uom, suom,
                                         item_group[name], color, 1));
@@ -154,7 +173,7 @@ void Command_Element::execute()
             _item = main_view->create_element(L, T, G, k,
                               symbol, name, sys_c,
                               uom, suom, group, color);
-            AddUndoCommand(new Command_Element(remember_L, remember_T,
+            Commands::AddUndo(new Command_Element(remember_L, remember_T,
                                 remember_G, remember_k,
                                 remember_symbol, remember_name,
                                 remember_sys_c,

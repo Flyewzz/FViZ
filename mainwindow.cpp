@@ -53,8 +53,8 @@ MainWindow::MainWindow(QWidget *parent) :
     main_window = this;
     main_view = ui->graphicsView;
     CreateActions();
-    undo_action = ui->action_13;
-    redo_action = ui->action_19;
+    undo_action = ui->undoAction;
+    redo_action = ui->redoAction;
     //Доработать
     undo_action->setEnabled(false);
     redo_action->setEnabled(false);
@@ -139,7 +139,7 @@ MainWindow::MainWindow(QWidget *parent) :
 void MainWindow::ClearStruct() {
     //Процедура полной очистки памяти программы
     //???
-
+    Commands::Clear();
     //Очистка видимого поля
     for (int i = 0; i < main_view->out.length(); ++i) {
     foreach (FizItem *wb, main_view->out[i]) {
@@ -243,6 +243,8 @@ void MainWindow::Open()
         return;
     }
     */
+    Commands::Clear();
+
     main_view->setCursor(Qt::WaitCursor);
     main_view->ClearField(); //Общая очистка видимого поля
 //    Сделать очистку сцены
@@ -252,7 +254,6 @@ void MainWindow::Open()
     sysgroup.clear();
     item_group.clear();
     foreach (QString group_name, lawsgrouplist.keys()) {
-
         foreach (Law *law, lawsgrouplist[group_name]->list) {
             delete law;
         }
@@ -339,8 +340,8 @@ void MainWindow::CreateActions()
     main_toolbar->addAction(ui->action_12);
     main_toolbar->addSeparator();
     //Добавление команд "Отменить" и "Повторить"
-    main_toolbar->addAction(ui->action_13);
-    main_toolbar->addAction(ui->action_19);
+    main_toolbar->addAction(ui->undoAction);
+    main_toolbar->addAction(ui->redoAction);
 }
 
 MainWindow::~MainWindow() //Главный деструктор программы
@@ -501,18 +502,18 @@ void MainWindow::on_action_7_triggered()
     this->close();
 }
 
-void MainWindow::on_action_13_triggered()
+void MainWindow::on_undoAction_triggered()
 {
-    Command *cmd = PopUndoCommand();
+    Command *cmd = Commands::PopUndo();
     if (cmd != nullptr) {
         cmd->execute();
         delete cmd;
     }
 }
 
-void MainWindow::on_action_19_triggered()
+void MainWindow::on_redoAction_triggered()
 {
-    Command *cmd = PopRedoCommand();
+    Command *cmd = Commands::PopRedo();
     if (cmd != nullptr) {
         cmd->execute();
         delete cmd;

@@ -104,7 +104,7 @@ void AddElement::on_pushButton_clicked()
         remember_element = main_view->create_element(L, T, G, k,
                                   symbol, name, sys_c,
                                   uom, suom, group, choose_color);
-        AddUndoCommand(new Command_Element(L_click, T_click,
+        Commands::AddUndo(new Command_Element(L_click, T_click,
                                     remember_G, remember_k,
                                     remember_symbol, remember_name,
                                     remember_sys_c,
@@ -116,7 +116,7 @@ void AddElement::on_pushButton_clicked()
         main_view->create_element(L, T, G, k,
                               symbol, name, sys_c,
                               uom, suom, group, choose_color);
-        AddUndoCommand(new Command_Element(L, T, G, k, symbol, name, sys_c,
+        Commands::AddUndo(new Command_Element(L, T, G, k, symbol, name, sys_c,
                                     uom, suom, group, choose_color));
     }
     L_click = L;

@@ -119,9 +119,8 @@ private slots:
 
     void on_action_7_triggered();
 
-    void on_action_13_triggered();
-
-    void on_action_19_triggered();
+    void on_undoAction_triggered();
+    void on_redoAction_triggered();
 
     void on_zoomInAction_triggered();
     void on_zoomOutAction_triggered();

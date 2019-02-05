@@ -28,13 +28,18 @@
 class Command;
 class FizItem;
 
+namespace Commands {
 // Should be allocated with new
-void AddUndoCommand(Command*);
-void AddRedoCommand(Command*);
+void AddUndo(Command*);
+void AddRedo(Command*);
 
 // Should be delete'd
-Command* PopUndoCommand();
-Command* PopRedoCommand();
+Command* PopUndo();
+Command* PopRedo();
+
+// Clear all commands
+void Clear();
+} // namespace Commands
 
 //Общий абстрактный класс, описывающий одну команду
 class Command

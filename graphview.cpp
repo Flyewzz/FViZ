@@ -407,7 +407,7 @@ void GraphView::slotActivated(QAction *act)
   else if (choose == "Удалить" && select->name != "") {
       ///Рассмотрим выбор меню удаления
 
-     AddUndoCommand(new Command_Element(select->L, select->T, select->G, select->k,
+     Commands::AddUndo(new Command_Element(select->L, select->T, select->G, select->k,
                                  select->symbol, select->name, select->value_c,
                                  select->unit_of_measurement, select->symbol_unit_of_measurement,
                                  item_group[select->name], select->level, 1));
