@@ -50,20 +50,26 @@ signals:
 class GraphView : public QGraphicsView
 {
     Q_OBJECT
-    QPolygonF polygon;
-    int cnt;
+
     friend class InitializeField;
     friend class MainWindow;
     friend class AddElement;
     friend class AddSysGroup;
+
+    QPolygonF polygon;
+    int cnt = 0;
     ModScene scene;
-    QGraphicsItem *ittt;
+    QGraphicsItem *ittt = nullptr;
     QVector<QVector<FizItem*>> out; //Отображаемое поле
     QVector<FizItem*> selected_items; //Список выделенных ячеек
-    QMenu *menu;
-    QMenu *menu_element;
-    QMenu *level_menu;
-    FizItem *select;
+    QMenu *menu = nullptr;
+    QMenu *menu_element = nullptr;
+    QMenu *level_menu = nullptr;
+    FizItem *select = nullptr;
+
+    bool mouseDown = false;
+    QPoint lastMousePos;
+
    public:
     explicit GraphView(QWidget *pwrt = nullptr) : QGraphicsView(pwrt) {
         cnt = 0;
@@ -74,9 +80,8 @@ class GraphView : public QGraphicsView
         menu = new QMenu(this);
         menu->addAction(QIcon(":/pics/pics/add.png"), "&Добавить");
         connect(menu, SIGNAL(triggered(QAction*)), SLOT(slotActivated(QAction*)));
-        menu_element = nullptr;
-        level_menu = nullptr;
     }
+
     //Создание элемента в логике приложения
     FizItem* create_element(const int &L, const int &T, const int &G, const int &k,
                                const QString &symbol, const QString &name, const QString &sys_c,
@@ -92,7 +97,7 @@ class GraphView : public QGraphicsView
     ~GraphView();
 protected:
     virtual void contextMenuEvent(QContextMenuEvent *event) override;
-   // virtual void mouseReleaseEvent(QMouseEvent *event);
+    virtual void mouseReleaseEvent(QMouseEvent *event) override;
     virtual void mousePressEvent(QMouseEvent *event) override;
     virtual void mouseMoveEvent(QMouseEvent *event) override;
     virtual void mouseDoubleClickEvent(QMouseEvent *event) override;

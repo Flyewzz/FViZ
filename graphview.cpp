@@ -174,9 +174,20 @@ void GraphView::contextMenuEvent(QContextMenuEvent *event)
     menu_element->exec(event->globalPos());
 }
 
+void GraphView::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (event->button() != Qt::LeftButton) return;
+
+    mouseDown = false;
+    lastMousePos = event->pos();
+}
+
 void GraphView::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() != Qt::LeftButton) return;
+
+    lastMousePos = event->pos();
+    mouseDown = true;
 
     select = dynamic_cast<FizItem*>(itemAt(event->pos())); //Получение выделенного элемента
     if (!select) {
@@ -285,6 +296,19 @@ void GraphView::mousePressEvent(QMouseEvent *event)
 
 void GraphView::mouseMoveEvent(QMouseEvent *event)
 {
+    if (mouseDown) {
+        QPoint newPos = event->pos();
+        QPoint delta = newPos - lastMousePos;
+
+        horizontalScrollBar()->setValue(horizontalScrollBar()->value() - delta.x());
+        verticalScrollBar()->setValue(verticalScrollBar()->value() - delta.y());
+
+        lastMousePos = newPos;
+
+        event->accept();
+        return;
+    }
+
     FizItem *item = dynamic_cast<FizItem*>(itemAt(event->pos()));
 
     if (item != nullptr) {
