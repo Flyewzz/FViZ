@@ -50,7 +50,7 @@ class FizItem : public QGraphicsItem
     quint64 renderRequest = 0;
 
     static constexpr const double kItemSizeScale = 1.5;
-    static constexpr const double kTextScale = 1.3;
+    static constexpr const double kTextScale = 1.0;
 
     static constexpr const int kItemSizeX = 130*kItemSizeScale;
     static constexpr const int kItemSizeY = 110*kItemSizeScale;

@@ -24,10 +24,15 @@ RenderFizitem(QObject *parent, QWidget *wparent);
 	delete _view;
 }
 
+// Callback for render task
 using callback_t = std::function<void (const QPixmap&)>;
 
+// Add render task with callback, get cancel token (task_id)
 quint64 Render(FizItem* item, QSize page_size, double page_scale, callback_t callback);
+// Cancel task by token (task_id)
 bool Cancel(quint64 task_id);
+
+// Start processing tasks
 void Fire();
 
 private:
@@ -38,16 +43,28 @@ struct Task {
 	callback_t callback = nullptr;
 	quint64 task_id = 0;
 };
+// Process single task
 void ProcessTask(const Task& task);
-void titleChanged(const QString &title);
 
-QList<Task> _tasks{};
+private slots:
+void loadFinished(bool);
+void printRequested();
+
+private:
+// _tasks, _task_counter and _firing lock
 QMutex _lock{};
+// Known task list
+QList<Task> _tasks{};
+// Counter for task ID
 quint64 _task_counter = 0;
-bool firing = true;
+// True if Fire scheduled
+bool _firing = true;
 
-QWebEngineView* _view = nullptr;
+// _view and _viewTask lock
 QMutex _viewLock{};
+// WebView for rendering
+QWebEngineView* _view = nullptr;
+// Task being rendered
 Task _viewTask{};
 };
 

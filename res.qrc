@@ -103,4 +103,11 @@
         <file>pics/-.png</file>
         <file>pics/+.png</file>
     </qresource>
+    <qresource>
+        <file>katex/index.html</file>
+        <file>katex/katex.css</file>
+        <file>katex/katex.js</file>
+        <file>katex/KaTeX_Main-Regular.woff</file>
+        <file>katex/KaTeX_Main-Italic.woff</file>
+    </qresource>
 </RCC>

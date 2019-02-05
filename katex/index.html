@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        html, body {
+            background: transparent;
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+            position: absolute;
+            overflow: hidden;
+            overflow-wrap: break-word;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #formula_container {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        .katex {
+            white-space: normal!important;
+        }
+        .katex-html {
+            display: inline!important;
+        }
+    </style>
+    <style>%katex_css%</style>
+    <script>%katex_js%</script>
+</head>
+<body>
+    <div id="formula_container">
+    </div>
+    <script>
+        function RAF(x) { window.requestAnimationFrame(x); };
+        function RIC(x) { window.requestIdleCallback(x); };
+        var container = document.getElementById('formula_container');
+        
+        function renderFormula(formula) {
+            container.innerHTML = '$$' + formula + '$$';
+            renderMathInElement(container, {strict: false});
+            RAF(function(){
+                RIC(function(){
+                    RAF(function(){
+                        RIC(window.print);
+                    });
+                });
+            })
+        };
+    </script>
+</body>
+</html>
