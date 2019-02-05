@@ -58,7 +58,7 @@ QList<Task> _tasks{};
 // Counter for task ID
 quint64 _task_counter = 0;
 // True if Fire scheduled
-bool _firing = true;
+bool _firing = false;
 
 // _view and _viewTask lock
 QMutex _viewLock{};

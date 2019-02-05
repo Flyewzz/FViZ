@@ -34,10 +34,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     renderer = new RenderFizitem(nullptr, this);
-    QTimer::singleShot(0, renderer, &RenderFizitem::Fire);
-//   scr = "<script "
-//           "src='MathJax/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML'>"
-//         "</script>";
+
     scr = "<script "
                "src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML'>"
              "</script>";
