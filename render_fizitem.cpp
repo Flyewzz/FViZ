@@ -34,7 +34,10 @@ static const auto TitleDone = QStringLiteral("Rendered");
 // Utility function to read text file from resources
 QString readTextFile(const QString& filename) {
     QFile f(filename);
-    f.open(QFile::ReadOnly | QFile::Text);
+    if (!f.open(QFile::ReadOnly | QFile::Text)) {
+        qDebug() << "Failed to open file" << filename << ":" << f.errorString();
+        return QString();
+    }
     QTextStream in(&f);
     QString rv = in.readAll();
     f.close();
@@ -44,7 +47,10 @@ QString readTextFile(const QString& filename) {
 // Utility function to read binary file as base64 string from resources
 QString readFileBase64(const QString& filename) {
     QFile f(filename);
-    f.open(QFile::ReadOnly);
+    if (!f.open(QFile::ReadOnly)) {
+        qDebug() << "Failed to open file" << filename << ":" << f.errorString();
+        return QString();
+    }
     QString rv(f.readAll().toBase64());
     f.close();
     return rv;
