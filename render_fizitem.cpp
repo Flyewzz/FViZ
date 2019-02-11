@@ -67,7 +67,7 @@ QString GetHTML() {
         .replace("%katex_italic_woff%", fontItalic);
 
     QString index = readTextFile(":/katex/index.html");
-    QString katexJS = readTextFile(":/katex/katex.js");
+    QString katexJS = readTextFile(":/katex/katex.js.css");
 
     return index
         .replace("%title_done%", TitleDone)

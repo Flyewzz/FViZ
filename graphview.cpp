@@ -52,8 +52,6 @@ FizItem* GraphView::create_element(const int &L, const int &T, const int &G, con
             item_group[name] = group;
         return item;
     }
-
-   //??? main_view->AddFizItem(L, T, G, k);
     FizItem *item = fizitems[group][T+N/2][T+L+N/2];
     item->name = name;
     item->symbol = symbol;
@@ -89,7 +87,6 @@ FizItem* GraphView::AddFizItem(const int &L, const int &T)
 {
 
     FizItem *item = scene.addFizItem(L, T, Qt::cyan);
-   // out[L+N/2][T+N/2] = scene.addFizItem(gX, gY, L, T, Qt::cyan);
     return item;
 }
 

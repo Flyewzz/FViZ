@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1316</width>
-    <height>1112</height>
+    <width>1470</width>
+    <height>1334</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>ФВиЗ 1.0</string>
+   <string>ФВиЗ 2</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -112,7 +112,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1316</width>
+     <width>1470</width>
      <height>21</height>
     </rect>
    </property>

@@ -6,7 +6,6 @@ int choose;
 int N = 12; //Размеры рабочей области (LT)
 //Хэш параметров системных групп ФВ
 QHash<QString, SysGroup*> sysgroup;
-QDir dir = QDir::current();
 QString scr;
 QString scroll_hide = "<style type='text/css'>"
        " body {"
@@ -35,17 +34,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     renderer = new RenderFizitem(nullptr, this);
-
     scr = "<script "
                "src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML'>"
              "</script>";
-   /*
-    scr = "<script "
-            "src='" + st + "?config=TeX-AMS-MML_HTMLorMML'>"
-          "</script>";
-          */
-  // qDebug() << scr;
-//    qDebug() << dir.path();
+
     ui->setupUi(this);
     main_window = this;
     main_view = ui->graphicsView;
@@ -83,36 +75,13 @@ MainWindow::MainWindow(QWidget *parent) :
             line << it;
 //                it->setVisible(true); // (для отладки)
         }
-       // mutex.lock(); //Блокируем вывод на форму, пока не добавили созданные элементы в текущем потоке
         main_view->out << line;
         line.clear();
     }
-        /*
-        //  ################(для отладки) ##################################
-        work_str = "/Users/igor/Desktop/Программа Чуев/Супер.fviz";
-        work_file.setFileName(work_str);
-        // На случай, если тестовый файл будет перемещен
-        if (!work_file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QMessageBox::critical(this, "Ошибка", "Файл не может быть открыт!");
-            return;
-        }
-        Open();
-        // ##################################################################
-        General_Settings *w = new General_Settings(this);
-        w->move(this->width() + 1, 0);
-        w->show();
-        w->update();
-        QPropertyAnimation *animation = new QPropertyAnimation(w, "pos", this);
-        animation->setDuration(1000);
-        animation->setStartValue(this->pos());
-        animation->setEndValue(QPoint(0, 0));
-        animation->start();
-        */
 }
 
 void MainWindow::ClearStruct() {
     //Процедура полной очистки памяти программы
-    //???
     Commands::Clear();
     //Очистка видимого поля
     for (int i = 0; i < main_view->out.length(); ++i) {
@@ -123,9 +92,6 @@ void MainWindow::ClearStruct() {
   }
     //Итоговая очистка поля
     main_view->out.clear();
-    //foreach (main, container) {
-
-   // }
     foreach (QString name, sysgroup.keys())
         RemoveSysGroup(name);
     sysgroup.clear();
@@ -155,10 +121,6 @@ void MainWindow::ClearStruct() {
 
 void MainWindow::Save()
 {
-    /*
-    work_stream << N; //Запомним размеры сцены (в LT координатах)
-    qDebug() << "Размер сцены: " << N;
-    */
     for (int i = 0; i < N; ++i)
         for (int j = 0; j < N; ++j)
            work_stream << *main_view->out[i][j];
@@ -205,23 +167,9 @@ void MainWindow::Save()
 
 void MainWindow::Open()
 {
-    /*
-    unsigned int check_number;
-    work_stream >> check_number; //Проверка размеров сцены (в LT координатах)
-
-    qDebug() << "N = " << check_number;
-    if (check_number != N) {
-        work_file.close();
-        QMessageBox::critical(this, "Несоответствие размеров", "Размер сцены в файле"
-                                                            " отличается от требуемого!");
-        return;
-    }
-    */
     Commands::Clear();
 
-    main_view->setCursor(Qt::WaitCursor);
     main_view->ClearField(); //Общая очистка видимого поля
-//    Сделать очистку сцены
     foreach (QString var, sysgroup.keys()) {
         RemoveSysGroup(var);
     }
@@ -300,7 +248,6 @@ void MainWindow::Open()
     }
     work_file.close();
     main_view->AllUpdate();
-    main_view->setCursor(Qt::ArrowCursor);
 }
 
 void MainWindow::CreateActions()
@@ -360,11 +307,6 @@ void CreateSysGroup(const QString &name, const int &G, const int &k, const QColo
 
 void RemoveSysGroup(const QString &name)
 {
-    /* ?
-    if (!sysgroup.contains(name)) return;
-    for (int i = 0; i < fizitems[name].size(); ++i)
-        fizitems[name][i].clear();
-    */
     for (int i = 0; i < fizitems[name].size(); ++i) {
         foreach (FizItem *item, fizitems[name][i]) {
             //Очищаем каждую ячейку в строке
@@ -392,19 +334,19 @@ QDataStream &operator >>(QDataStream &stream, SysGroup &elem)
 void MainWindow::on_action_6_triggered()
 {
     QString temp = work_str;
-    work_str = QFileDialog::getOpenFileName(this, QString::fromUtf8(u8"Открытие сцены"), "/", "*.fviz");
+    work_str = QFileDialog::getOpenFileName(this, "Открытие сцены", "/", "*.fviz");
     if (work_str.isEmpty()) {
         work_str = temp;
         return; //При отмене вернуться
     }
     work_file.setFileName(work_str);
     if (!work_file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::critical(this, QString::fromUtf8(u8"Ошибка"), QString::fromUtf8(u8"Файл не может быть открыт!"));
+        QMessageBox::critical(this, "Ошибка", "Файл не может быть открыт!");
         return;
     }
     QFile currentFile(work_str);
     QFileInfo fileinfo(currentFile.fileName());
-    setWindowTitle(QString::fromUtf8(u8"ФВиЗ 1.0 (Открыт ") + fileinfo.fileName() + ')');
+    setWindowTitle("ФВиЗ 2 (Открыт " + fileinfo.fileName() + ')');
     ui->label_path->setText(fileinfo.absoluteFilePath());
     Open();
 }
@@ -413,25 +355,25 @@ void MainWindow::on_action_10_triggered()
 {
 
     QString temp = work_str;
-    work_str = QFileDialog::getSaveFileName(this, QString::fromUtf8(u8"Сохранение сцены"), "/", "*.fviz");
+    work_str = QFileDialog::getSaveFileName(this, "Сохранение сцены", "/", "*.fviz");
     if (work_str.isEmpty()) {
         work_str = temp;
         return;
     }
     work_file.setFileName(work_str);
     if (!work_file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::critical(this, QString::fromUtf8(u8"Ошибка"), QString::fromUtf8(u8"Ошибка сохранения сцены!"));
+        QMessageBox::critical(this, "Ошибка", "Ошибка сохранения сцены!");
         return;
     }
     Save();
-    QMessageBox::information(this, QString::fromUtf8(u8"Сохранение сцены"), QString::fromUtf8(u8"Сцена успешно загружена в файл!"));
+    QMessageBox::information(this, "Сохранение сцены", "Сцена успешно загружена в файл!");
 }
 
 
 void MainWindow::on_action_9_triggered()
 {
    if (!work_file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::critical(this, QString::fromUtf8(u8"Ошибка"), QString::fromUtf8(u8"Ошибка сохранения сцены!"));
+        QMessageBox::critical(this, "Ошибка", "Ошибка сохранения сцены!");
         return;
    }
    Save();

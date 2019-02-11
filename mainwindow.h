@@ -25,7 +25,6 @@
 #include <QDir>
 #include <QDebug>
 #include <QCursor>
-#include "general_settings.h"
 #include "fizitem.h"
 #include "commands.h"
 #include <QPropertyAnimation>

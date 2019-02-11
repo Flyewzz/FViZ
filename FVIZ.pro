@@ -24,7 +24,6 @@ CONFIG+=sdk_no_version_check
 # deprecated API in order to know how to port your code away from it.
 DEFINES += QT_DEPRECATED_WARNINGS
 
-
 QMAKE_CXXFLAGS_DEBUG += -pg
 QMAKE_LFLAGS_DEBUG += -pg
 # You can also make your code fail to compile if you use deprecated APIs.
@@ -45,7 +44,6 @@ SOURCES += \
     lawssettings.cpp \
     mainlist.cpp \
     commands.cpp \
-    general_settings.cpp \
     render_fizitem.cpp
 
 HEADERS += \
@@ -59,7 +57,6 @@ HEADERS += \
     lawssettings.h \
     mainlist.h \
     commands.h \
-    general_settings.h \
     render_fizitem.h
 
 FORMS += \
@@ -69,12 +66,8 @@ FORMS += \
     addsysgroup.ui \
     listoflaws.ui \
     lawssettings.ui \
-    mainlist.ui \
-    general_settings.ui
-
-
-DISTFILES += \
-    MathJax/MathJax.js
+    mainlist.ui
 
 RESOURCES += \
-    res.qrc
+    res.qrc \
+    katex/katex.qrc
