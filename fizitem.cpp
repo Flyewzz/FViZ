@@ -145,7 +145,7 @@ QDataStream &operator << (QDataStream &stream, const FizItem &elem)
               elem.L << elem.T << elem.G << elem.k
            << elem.level << elem.visible
            // For backwards compat
-           << elem.xPos() << elem.yPos();
+           << 0 << 0;
 
     return stream;
 }

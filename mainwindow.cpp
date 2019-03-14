@@ -137,10 +137,21 @@ void MainWindow::Save()
         }
         //и их содержимое...
         foreach (QString level, fizitems.keys()) {
-            for (int i = 0; i < N; ++i)
-                for (int j = 0; j < N; ++j)
-                    work_stream << level << *fizitems[level][i][j];
+            work_stream << level;
+            
+            for (int i = 0; i < N; ++i) {
+                for (int j = 0; j < N; ++j) {
+                    auto item = fizitems[level][i][j];
+                    
+                    if (item->getName() != "") {
+                        work_stream << true << *item;
+                    } else {
+                        work_stream << false;
+                    }
+                }
+            }
         }
+
         int count_of_itemgroups = item_group.size();
         // qDebug() << "Количество itemgroup: " << count_of_itemgroups;
         //Запоминаем соответствие названия имен блоков и их уровней
@@ -206,14 +217,22 @@ void MainWindow::Open()
     }
     //и их содержимое...
    // qDebug() << "Этап заполнения уровней";
-    for (int t = 0; t < count_of_levels; ++t)
-        for (int i = 0; i < N; ++i)
+    for (int t = 0; t < count_of_levels; ++t) {
+        QString level;
+        work_stream >> level;
+
+        for (int i = 0; i < N; ++i) {
             for (int j = 0; j < N; ++j) {
-                QString level;
-                work_stream >> level;
-                work_stream >> *fizitems[level][i][j];
+                bool exists;
+                work_stream >> exists;
+                if (exists) {
+                    work_stream >> *fizitems[level][i][j];
+                }
                // qDebug() << level << fizitems[level][i][j]->getName() << " ";
             }
+        }
+    }
+
     int count_of_itemgroups;
     //Вспоминаем соответствие названия имен блоков и их уровней
    // qDebug() << "Этап заполнения соответствий блоков и имен их СГ";
