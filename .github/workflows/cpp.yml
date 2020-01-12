@@ -10,15 +10,21 @@ jobs:
     
     steps:
     - uses: actions/checkout@v1
+
     - name: Set up cmake
-    - run: apt-get install update && \ 
-           apt-get install -y cmake 
+      run: sudo apt-get update && 
+           sudo apt-get install -y cmake 
+
     - name: Create a bin folder
-    - run: mkdir tests/bin
-    - working-directory: ./tests/bin
+      run: mkdir tests/bin
+
+
     - name: CMake
-    - run: cmake ..
+      working-directory: ./tests/bin
+      run: cmake ..
+
     - name: make
-    - run: make
+      run: make
+
     - name: Run all the tests
-    - run: ./tests
+      run: ./tests
