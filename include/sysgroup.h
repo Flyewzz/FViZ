@@ -2,7 +2,7 @@
 #define SYSGROUP_H
 
 #include <string>
-#include f
+
 using std::string;
 
 class SysGroup
@@ -11,10 +11,10 @@ class SysGroup
    int _G;
    int _k;
 public:
-    SysGroup();
-    string getName() const {
-        return _name;
-    }
+   SysGroup(string name, int G, int k);
+   string getName() const;
+   int getG() const;
+   int getK() const;
 };
 
 #endif // SYSGROUP_H

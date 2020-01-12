@@ -32,38 +32,19 @@ QMAKE_LFLAGS_DEBUG += -pg
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 
-SOURCES += \
-    lawsgroup.cpp \
-        main.cpp \
-        mainwindow.cpp \
-    fizitem.cpp \
-    graphview.cpp \
-    addelement.cpp \
-    about.cpp \
-    addsysgroup.cpp \
-    listoflaws.cpp \
-    lawssettings.cpp \
-    mainlist.cpp \
-    commands.cpp \
-    render_fizitem.cpp \
-    sysgroup.cpp
+ SOURCES += \
+    source/color.cpp  \
+    source/cell.cpp  \
+    source/sysgroup.cpp
 
 HEADERS += \
-    cell.h \
-    law.h \
-    lawsgroup.h \
-        mainwindow.h \
-    fizitem.h \
-    graphview.h \
-    addelement.h \
-    about.h \
-    addsysgroup.h \
-    listoflaws.h \
-    lawssettings.h \
-    mainlist.h \
-    commands.h \
-    render_fizitem.h \
-    sysgroup.h
+    include/color.h  \
+    include/cell.h  \
+    include/sysgroup.h
+
+INCLUDEPATH += $PWD/include
+
+
 
 FORMS += \
         mainwindow.ui \
