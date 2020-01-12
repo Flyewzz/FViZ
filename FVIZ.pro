@@ -33,6 +33,7 @@ QMAKE_LFLAGS_DEBUG += -pg
 
 
 SOURCES += \
+    lawsgroup.cpp \
         main.cpp \
         mainwindow.cpp \
     fizitem.cpp \
@@ -44,9 +45,13 @@ SOURCES += \
     lawssettings.cpp \
     mainlist.cpp \
     commands.cpp \
-    render_fizitem.cpp
+    render_fizitem.cpp \
+    sysgroup.cpp
 
 HEADERS += \
+    cell.h \
+    law.h \
+    lawsgroup.h \
         mainwindow.h \
     fizitem.h \
     graphview.h \
@@ -57,7 +62,8 @@ HEADERS += \
     lawssettings.h \
     mainlist.h \
     commands.h \
-    render_fizitem.h
+    render_fizitem.h \
+    sysgroup.h
 
 FORMS += \
         mainwindow.ui \
