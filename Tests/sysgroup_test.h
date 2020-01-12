@@ -1,5 +1,5 @@
-#ifndef TST_TEST1_H
-#define TST_TEST1_H
+#ifndef SYSGROUP_TEST_H
+#define SYSGROUP_TEST_H
 
 #include <gtest/gtest.h>
 #include <gmock/gmock-matchers.h>
@@ -38,4 +38,4 @@ TEST(Tests, CREATING)
 
 }
 
-#endif // TST_TEST1_H
+#endif // SYSGROUP_TEST_H

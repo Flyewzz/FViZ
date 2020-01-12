@@ -1,4 +1,4 @@
-#include "sysgroup.h"
+#include "../include/sysgroup.h"
 
 SysGroup::SysGroup(string name, int G, int k) : _name(name), _G(G), _k(k){}
 string SysGroup::getName() const {
