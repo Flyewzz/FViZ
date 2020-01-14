@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.12)
 
 project(cpp-fviz-tests)
 find_package(GTest REQUIRED)

@@ -9,7 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v1
+    
+    - name: Check out code
+      uses: actions/checkout@v1
 
     - name: Set up cmake
       run: sudo apt-get update && 
@@ -17,11 +19,11 @@ jobs:
 
     - name: Create bin folder
       run: mkdir bin
-      working-directory: ./tests
+      working-directory: ./Tests
 
     - name: CMake
       run: cmake ..
-      working-directory: ./bin
+      working-directory: ./Tests/bin
 
     - name: make
       run: make
