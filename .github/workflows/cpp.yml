@@ -13,20 +13,33 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v1
 
+    - name: St up g++
+      run: sudo apt-get install g++
+
     - name: Set up cmake
       run: sudo apt-get update && 
            sudo apt-get install -y cmake 
 
+    - name: Install GTest
+      run:  |
+        sudo apt-get install libgtest-dev
+        cd /usr/src/gtest
+        sudo mkdir build && cd build
+        sudo cmake ..
+        sudo make install
+ 
+    - name: Check out code
+      uses: actions/checkout@v1
+
     - name: Create bin folder
-      run: mkdir bin
-      working-directory: ./Tests
+      run: mkdir ./Tests/bin
 
-    - name: CMake
-      run: cmake ..
-      working-directory: ./Tests/bin
-
-    - name: make
-      run: make
+    - name: Building
+      run:  | 
+        cd ./Tests/bin
+        cmake ..
+        make
 
     - name: Run all the tests
       run: ./tests
+      working-directory: ./Tests/bin
