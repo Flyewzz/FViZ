@@ -13,23 +13,13 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v1
 
-    - name: St up g++
-      run: sudo apt-get install g++
+    - name: action-gtest
+      uses: CyberZHG/github-action-gtest@0.0.1
 
+      
     - name: Set up cmake
       run: sudo apt-get update && 
            sudo apt-get install -y cmake 
-
-    - name: Install GTest
-      run:  |
-        sudo apt-get install libgtest-dev
-        cd /usr/src/gtest
-        sudo mkdir build && cd build
-        sudo cmake ..
-        sudo make install
- 
-    - name: Check out code
-      uses: actions/checkout@v1
 
     - name: Create bin folder
       run: mkdir ./Tests/bin
