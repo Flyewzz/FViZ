@@ -11,25 +11,10 @@ jobs:
     steps:
     
     - name: Check out code
-      uses: actions/checkout@v1
+      uses: actions/checkout@v2
 
     - name: action-gtest
       uses: CyberZHG/github-action-gtest@0.0.1
+      with:
+        args: "-d ./Tests -e tests"
 
-      
-    - name: Set up cmake
-      run: sudo apt-get update && 
-           sudo apt-get install -y cmake 
-
-    - name: Create bin folder
-      run: mkdir ./Tests/bin
-
-    - name: Building
-      run:  | 
-        cd ./Tests/bin
-        cmake ..
-        make
-
-    - name: Run all the tests
-      run: ./tests
-      working-directory: ./Tests/bin
