@@ -3,9 +3,11 @@
 
 #include "sysgroup.h"
 #include <list>
+#include <vector>
 
 using std::string;
 using std::pair;
+using std::vector;
 
 class System
 {
@@ -16,7 +18,7 @@ public:
    void addSysGroup(shared_ptr<SysGroup> group);
    shared_ptr<SysGroup> getSysGroup(int G, int k) const;
    void removeSysGroup(int G, int k);
-   void print() const;
+   vector<shared_ptr<Cell> > getCells(int L, int T) const;
 };
 
 #endif // SYSTEM_H

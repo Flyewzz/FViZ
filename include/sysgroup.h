@@ -30,7 +30,6 @@ public:
 
    void setCell(shared_ptr<Cell> cell, int L, int T);
    shared_ptr<Cell> getCell(int L, int T) const;
-   void print() const;
 };
 
 #endif // SYSGROUP_H

@@ -36,7 +36,14 @@ void System::removeSysGroup(int G, int k)
    _groups.remove(group);
 }
 
-
-void System::print() const
-{
+vector<shared_ptr<Cell> > System::getCells(int L, int T) const {
+   vector<shared_ptr<Cell> > foundCells = vector<shared_ptr<Cell> >();
+   for (auto group = _groups.begin(); group != _groups.end(); ++group) {
+      shared_ptr<Cell> cell = (*group)->getCell(L, T);
+      if (cell == nullptr) {
+         continue;
+      }
+      foundCells.push_back(cell);
+   }
+   return foundCells;
 }

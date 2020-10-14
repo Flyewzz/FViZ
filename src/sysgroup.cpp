@@ -20,14 +20,10 @@ void SysGroup::setCell(shared_ptr<Cell> cell, int L, int T) {
 
 shared_ptr<Cell> SysGroup::getCell(int L, int T) const {
      std::pair<int, int> pair = std::make_pair(L, T);
-     shared_ptr<Cell> cell = _cells.at(pair);
-     return cell;
-}
-
-void SysGroup::print() const {
-     for (auto iterator = _cells.begin(); iterator != _cells.end(); ++iterator) {
-          std::pair<int, int> key = iterator->first;
-          std::cout <<  key.first << " " << key.second  << ": " << iterator->second->getName();
-          std::cout << std::endl;
+     auto found = _cells.find(pair);
+     shared_ptr<Cell> cell = nullptr;
+     if (found != _cells.end()) {
+         cell = _cells.at(pair);
      }
+     return cell;
 }
