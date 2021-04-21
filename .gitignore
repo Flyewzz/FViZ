@@ -1,3 +1,6 @@
 build/
-.DS_Store
 *.pro.user*
+.vscode
+__pycache__
+env
+.DS_Store
