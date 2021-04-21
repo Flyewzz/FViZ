@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <!-- Загрузим React. -->
+    <!-- Примечание: при деплое на продакшен замените «development.js» на «production.min.js». -->
+    <script
+      src="https://unpkg.com/react@17/umd/react.development.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/konva/7.2.5/konva.min.js"
+      crossorigin
+    ></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <div id="root"></div>
+    <!-- Загрузим наш React-компонент. -->
+    <!-- <script src="canvas.js"></script> -->
+    <script type="text/babel">
+      class Field {
+        kItemSizeScale = 1;
+        r = 130 * this.kItemSizeScale;
+        N = 6;
+        space = 20;
+        startCellPositionX = 500;
+        startCellPositionY = 500;
+
+        constructor(w, h, container) {
+          this.stage = new Konva.Stage({
+            container: container, // id of container <div>
+            width: w,
+            height: h,
+          });
+          this.layer = new Konva.Layer(); // then create layer
+          // add the layer to the stage
+          this.stage.add(this.layer);
+        }
+
+        createCircle() {
+          // create our shape
+          var circle = new Konva.Circle({
+            x: this.stage.width() / 2,
+            y: this.stage.height() / 2,
+            radius: 70,
+            fill: "red",
+            stroke: "black",
+            strokeWidth: 4,
+          });
+          circle.on("click", (e) => {
+            alert('Clicked on L: ' + Number.toString(L) + ', T: ' + Number.toString(T));
+          });
+          // add the shape to the layer
+          this.layer.add(circle);
+          // draw the image
+          this.layer.draw();
+        }
+
+
+        createCell(L, T, color) {
+          let get_x = function (L, T) {
+            return (
+              this.startCellPositionX +
+              ((L - T) * (Math.sqrt(3) * this.r + this.space)) / 2
+            );
+          }
+
+          let get_y = function(L, T) {
+            return (
+              this.startCellPositionY -
+              ((L + T) * (3 * this.r + Math.sqrt(3) * this.space)) / 2
+            );
+          }
+          let x = get_x.call(this, L, T);
+          let y = get_y.call(this, L, T);
+          let points = new Array();
+          //points.push(x, y);
+          for (let i = 0; i <= this.N; ++i) {
+            let angle = (2 * Math.PI * i) / this.N;
+            points.push(x + this.r * Math.sin(angle), y - this.r * Math.cos(angle));
+          }
+          let cell = new Konva.Line({
+            points: points,
+            fill: color,
+            stroke: "black",
+            strokeWidth: 2,
+            closed: true,
+          });
+          cell.on('click', (e) => {
+            alert('Clicked on L: ' + L + ', T: ' + T);
+            cell.stroke = 'red';
+            cell.strokeWidth = 6;
+            //cell.setLineDash([8, 10]);
+            this.layer.draw();
+          });
+          this.layer.add(cell);
+          this.layer.draw();
+        }
+      }
+      //ReactDOM.render(<App />, document.getElementById("root"));
+
+      let field = new Field(1000, 1000, "root");
+      //field.createCircle();
+      for (let i = -5; i <= 5; ++i) {
+        for (let j = -5; j <= 5; ++j) {
+          field.createCell(i, j, "#73ecfa");
+        }
+      }
+      field.createCell(0, 0, "#73ecfa");
+    </script>
+    <!-- <canvas width="1600" height="1600"></canvas> -->
+    <!-- <script>
+      var canvas = document.querySelector("canvas");
+      var ctx = canvas.getContext("2d");
+      const kItemSizeScale = 1;
+      const r = 130 * kItemSizeScale;
+      function polygon(x, y, N, r, color) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        for (let i = 0; i <= N; i++) {
+          let angle = (2 * Math.PI * i) / N;
+          ctx.lineTo(x + r * Math.sin(angle), y - r * Math.cos(angle));
+        }
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.save();
+        //Below fills the shape
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.restore();
+      }
+
+      let L = 0;
+      let T = 0;
+      let space = 20;
+
+      function get_len_by_L(L) {
+        return 2 * r * Math.cos(Math.PI / 3) + space;
+      }
+
+      function get_x(L, T) {
+        return 500 + ((L - T) * (Math.sqrt(3) * r + space)) / 2;
+      }
+
+      function get_y(L, T) {
+        return 500 - ((L + T) * (3 * r + Math.sqrt(3) * space)) / 2;
+      }
+
+      // polygon(500, 500, 6, r, "#73ecfa");
+      for (let i = -5; i <= 5; ++i) {
+        for (let j = -5; j <= 5; ++j) {
+          polygon(get_x(i, j), get_y(i, j), 6, r, "#73ecfa");
+        }
+      }
+      ctx.translate(500, 500);
+      ctx.scale(2, 2);
+      ctx.translate(-500, -500);
+    </script> -->
+  </body>
+</html>

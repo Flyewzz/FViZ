@@ -1,9 +1,0 @@
-<RCC>
-    <qresource prefix="/katex">
-        <file>index.html</file>
-        <file>katex.css</file>
-        <file>katex.js.css</file>
-        <file>KaTeX_Main-Regular.woff</file>
-        <file>KaTeX_Main-Italic.woff</file>
-    </qresource>
-</RCC>

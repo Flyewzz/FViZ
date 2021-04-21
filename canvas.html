@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <canvas width="1600" height="1600"></canvas>
+    <script>
+      var canvas = document.querySelector("canvas");
+      var ctx = canvas.getContext("2d");
+      const kItemSizeScale = 1;
+      const r = 130 * kItemSizeScale;
+      //const kItemSizeY = r;
+      //const kItemSizeX = kItemSizeY * Math.sin(Math.PI / 3);
+      //const kItemSizeX = 130 * kItemSizeScale;
+      function polygon(x, y, N, r, color) {
+        //x&y are positions, N is side number, r is size, color is to fill
+
+        //ctx.moveTo(x + r * Math.cos(0), y + r * Math.sin(0));
+        //const kItemSizeX = 130 * kItemSizeScale;
+        //r = kItemSizeY;
+        //ctx.moveTo(x, y + r * Math.sin(Math.PI / 3));
+
+        //ctx.moveTo(x, y);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        for (let i = 0; i <= N; i++) {
+          let angle = (2 * Math.PI * i) / N;
+          ctx.lineTo(x + r * Math.sin(angle), y - r * Math.cos(angle));
+        }
+        //Below draws the shape
+        //ctx.strokeStyle = "red";
+        //ctx.lineWidth = 4;
+        //ctx.setLineDash([8, 10]);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.save();
+        //Below fills the shape
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.restore();
+      }
+
+      let L = 0;
+      let T = 0;
+      //let r = 20;
+      let space = 20;
+
+      function get_len_by_L(L) {
+        return 2 * r * Math.cos(Math.PI / 3) + space;
+      }
+
+      function get_x(L, T) {
+        //return 500 + get_len_by_L(L) * Math.sin(Math.PI / 3);
+        //return 500 + L * (Math.sqrt(3) * r + space) / 2 + r;
+        return 500 + ((L - T) * (Math.sqrt(3) * r + space)) / 2;
+      }
+
+      function get_y(L, T) {
+        //return 500 - L * (3 * r + Math.sqrt(3) * space) / 2 - r;
+        //return 500 - get_len_by_L(L) * Math.cos(Math.PI / 3);
+        return 500 - ((L + T) * (3 * r + Math.sqrt(3) * space)) / 2;
+      }
+
+      // polygon(500, 500, 6, r, "#73ecfa");
+      for (let i = -5; i <= 5; ++i) {
+        for (let j = -5; j <= 5; ++j) {
+          polygon(get_x(i, j), get_y(i, j), 6, r, "#73ecfa");
+        }
+      }
+      ctx.translate(500, 500);
+      ctx.scale(2, 2);
+      ctx.translate(-500, -500);
+
+    </script>
+  </body>
+</html>
