@@ -65,7 +65,7 @@
         }
 
 
-        createCell(L, T, color) {
+        createCell(L, T, color, activated=false) {
           let get_x = function (L, T) {
             return (
               this.startCellPositionX +
@@ -87,19 +87,22 @@
             let angle = (2 * Math.PI * i) / this.N;
             points.push(x + this.r * Math.sin(angle), y - this.r * Math.cos(angle));
           }
-          let cell = new Konva.Line({
+          let attrs = {
             points: points,
             fill: color,
-            stroke: "black",
-            strokeWidth: 2,
+            stroke: activated ? "red" : "black",
+            strokeWidth: activated ? 6 : 2,
             closed: true,
-          });
+            dash: [8, 10],
+          }
+          if (!activated) {
+            delete attrs.dash;
+          }
+          let cell = new Konva.Line(attrs);
           cell.on('click', (e) => {
-            alert('Clicked on L: ' + L + ', T: ' + T);
-            cell.stroke = 'red';
-            cell.strokeWidth = 6;
-            //cell.setLineDash([8, 10]);
-            this.layer.draw();
+            cell.destroy();
+            console.log('Clicked on L: ' + L + ', T: ' + T);
+            this.createCell(L, T, "#73ecfa", !activated);
           });
           this.layer.add(cell);
           this.layer.draw();
