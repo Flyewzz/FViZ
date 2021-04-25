@@ -9,6 +9,12 @@
   <body>
     <!-- Загрузим React. -->
     <!-- Примечание: при деплое на продакшен замените «development.js» на «production.min.js». -->
+
+    <script src="katex/katex.min.js" type="text/javascript"></script>
+    <link href="katex/katex.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
     <script
       src="https://unpkg.com/react@17/umd/react.development.js"
       crossorigin
@@ -22,6 +28,7 @@
       crossorigin
     ></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <div id="render"></div>
     <div id="root"></div>
     <!-- Загрузим наш React-компонент. -->
     <!-- <script src="canvas.js"></script> -->
@@ -33,6 +40,7 @@
         space = 20;
         startCellPositionX = 500;
         startCellPositionY = 500;
+        renderElement = document.getElementById("render");
 
         constructor(w, h, container) {
           this.stage = new Konva.Stage({
@@ -56,7 +64,12 @@
             strokeWidth: 4,
           });
           circle.on("click", (e) => {
-            alert('Clicked on L: ' + Number.toString(L) + ', T: ' + Number.toString(T));
+            alert(
+              "Clicked on L: " +
+                Number.toString(L) +
+                ", T: " +
+                Number.toString(T)
+            );
           });
           // add the shape to the layer
           this.layer.add(circle);
@@ -64,28 +77,30 @@
           this.layer.draw();
         }
 
-
-        createCell(L, T, color, activated=false) {
+        createCell(L, T, color, activated = false) {
           let get_x = function (L, T) {
             return (
               this.startCellPositionX +
               ((L - T) * (Math.sqrt(3) * this.r + this.space)) / 2
             );
-          }
+          };
 
-          let get_y = function(L, T) {
+          let get_y = function (L, T) {
             return (
               this.startCellPositionY -
               ((L + T) * (3 * this.r + Math.sqrt(3) * this.space)) / 2
             );
-          }
+          };
           let x = get_x.call(this, L, T);
           let y = get_y.call(this, L, T);
           let points = new Array();
           //points.push(x, y);
           for (let i = 0; i <= this.N; ++i) {
             let angle = (2 * Math.PI * i) / this.N;
-            points.push(x + this.r * Math.sin(angle), y - this.r * Math.cos(angle));
+            points.push(
+              x + this.r * Math.sin(angle),
+              y - this.r * Math.cos(angle)
+            );
           }
           let attrs = {
             points: points,
@@ -94,18 +109,41 @@
             strokeWidth: activated ? 6 : 2,
             closed: true,
             dash: [8, 10],
-          }
+          };
           if (!activated) {
             delete attrs.dash;
           }
           let cell = new Konva.Line(attrs);
-          cell.on('click', (e) => {
+          let eventFunction = (e) => {
             cell.destroy();
-            console.log('Clicked on L: ' + L + ', T: ' + T);
+            console.log("Clicked on L: " + L + ", T: " + T);
             this.createCell(L, T, "#73ecfa", !activated);
-          });
+          };
+          cell.on("click", eventFunction);
           this.layer.add(cell);
           this.layer.draw();
+          field.createFormula(x - 105, y - 40);
+          //formula.on("click", eventFunction);
+        }
+
+        createFormula(x, y) {
+          katex.render("L^2T^2 \\vec{F} T^{-1}", this.renderElement);
+          html2canvas(this.renderElement, {
+            backgroundColor: "rgba(0,0,0,0)",
+          })
+            .then((canvas) => {
+              canvas.backgroundColor = "rgba(225,150,150,0.5)";
+              let imgObj = new Image();
+              imgObj.src = canvas.toDataURL("image/png");
+              let image = new Konva.Image({
+                x: x,
+                y: y,
+                image: imgObj,
+              });
+              this.layer.add(image);
+              this.layer.draw();
+            })
+            .catch((err) => console.log(err));
         }
       }
       //ReactDOM.render(<App />, document.getElementById("root"));
@@ -117,7 +155,8 @@
           field.createCell(i, j, "#73ecfa");
         }
       }
-      field.createCell(0, 0, "#73ecfa");
+      //field.createCell(0, 0, "#73ecfa");
+      //field.createFormula();
     </script>
     <!-- <canvas width="1600" height="1600"></canvas> -->
     <!-- <script>
