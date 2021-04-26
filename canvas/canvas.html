@@ -122,7 +122,7 @@
           cell.on("click", eventFunction);
           this.layer.add(cell);
           this.layer.draw();
-          field.createFormula(x - 105, y - 40);
+          field.createFormula(x - 105, y - 60);
           //formula.on("click", eventFunction);
         }
 
@@ -148,10 +148,10 @@
       }
       //ReactDOM.render(<App />, document.getElementById("root"));
 
-      let field = new Field(1000, 1000, "root");
+      let field = new Field(1500, 1100, "root");
       //field.createCircle();
-      for (let i = -5; i <= 5; ++i) {
-        for (let j = -5; j <= 5; ++j) {
+      for (let i = -2; i <= 2; ++i) {
+        for (let j = -2; j <= 2; ++j) {
           field.createCell(i, j, "#73ecfa");
         }
       }
