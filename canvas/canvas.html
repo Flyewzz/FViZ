@@ -51,161 +51,111 @@
           this.layer = new Konva.Layer(); // then create layer
           // add the layer to the stage
           this.stage.add(this.layer);
-        }
 
-        createCircle() {
-          // create our shape
-          var circle = new Konva.Circle({
-            x: this.stage.width() / 2,
-            y: this.stage.height() / 2,
-            radius: 70,
-            fill: "red",
-            stroke: "black",
-            strokeWidth: 4,
-          });
-          circle.on("click", (e) => {
-            alert(
-              "Clicked on L: " +
-                Number.toString(L) +
-                ", T: " +
-                Number.toString(T)
-            );
-          });
-          // add the shape to the layer
-          this.layer.add(circle);
-          // draw the image
-          this.layer.draw();
+          this.cells = {}; // Храним все клетки, чтобы не пересоздавать формулы
         }
 
         createCell(L, T, color, activated = false) {
-          let get_x = function (L, T) {
-            return (
-              this.startCellPositionX +
-              ((L - T) * (Math.sqrt(3) * this.r + this.space)) / 2
-            );
-          };
+    let get_x = (L, T) =>
+      this.startCellPositionX +
+      ((L - T) * (Math.sqrt(3) * this.r + this.space)) / 2;
 
-          let get_y = function (L, T) {
-            return (
-              this.startCellPositionY -
-              ((L + T) * (3 * this.r + Math.sqrt(3) * this.space)) / 2
-            );
-          };
-          let x = get_x.call(this, L, T);
-          let y = get_y.call(this, L, T);
-          let points = new Array();
-          //points.push(x, y);
-          for (let i = 0; i <= this.N; ++i) {
-            let angle = (2 * Math.PI * i) / this.N;
-            points.push(
-              x + this.r * Math.sin(angle),
-              y - this.r * Math.cos(angle)
-            );
-          }
-          let attrs = {
-            points: points,
-            fill: color,
-            stroke: activated ? "red" : "black",
-            strokeWidth: activated ? 6 : 2,
-            closed: true,
-            dash: [8, 10],
-          };
-          if (!activated) {
-            delete attrs.dash;
-          }
-          let cell = new Konva.Line(attrs);
-          let eventFunction = (e) => {
-            cell.destroy();
-            console.log("Clicked on L: " + L + ", T: " + T);
-            this.createCell(L, T, "#73ecfa", !activated);
-          };
-          cell.on("click", eventFunction);
-          this.layer.add(cell);
-          this.layer.draw();
-          field.createFormula(x - 105, y - 60);
-          //formula.on("click", eventFunction);
-        }
+    let get_y = (L, T) =>
+      this.startCellPositionY -
+      ((L + T) * (3 * this.r + Math.sqrt(3) * this.space)) / 2;
 
-        createFormula(x, y) {
-          katex.render("L^2T^2 \\vec{F} T^{-1}", this.renderElement);
-          html2canvas(this.renderElement, {
-            backgroundColor: "rgba(0,0,0,0)",
-          })
-            .then((canvas) => {
-              canvas.backgroundColor = "rgba(225,150,150,0.5)";
-              let imgObj = new Image();
-              imgObj.src = canvas.toDataURL("image/png");
-              let image = new Konva.Image({
-                x: x,
-                y: y,
-                image: imgObj,
-              });
-              this.layer.add(image);
-              this.layer.draw();
-            })
-            .catch((err) => console.log(err));
-        }
+    let x = get_x(L, T);
+    let y = get_y(L, T);
+    let points = [];
+
+    for (let i = 0; i <= this.N; ++i) {
+      let angle = (2 * Math.PI * i) / this.N;
+      points.push(
+        x + this.r * Math.sin(angle),
+        y - this.r * Math.cos(angle)
+      );
+    }
+
+    let cellGroup = this.cells[`${L},${T}`];
+
+    if (cellGroup) {
+      // Если сота уже существует, просто меняем её состояние
+      let cell = cellGroup.getChildren()[0]; // Получаем соту (первый элемент в группе)
+      let newActivated = !cell.attrs.activated; // Меняем состояние
+
+      cell.stroke(newActivated ? "red" : "black");
+      cell.strokeWidth(newActivated ? 6 : 2);
+      cell.dash(newActivated ? [8, 10] : null);
+      cell.attrs.activated = newActivated; // Запоминаем состояние
+
+      this.layer.draw();
+      return;
+    }
+
+    // Создаём новую соту
+    let cell = new Konva.Line({
+      points: points,
+      fill: color,
+      stroke: activated ? "red" : "black",
+      strokeWidth: activated ? 6 : 2,
+      closed: true,
+      dash: activated ? [8, 10] : null,
+      activated: activated, // Запоминаем состояние
+    });
+
+    cellGroup = new Konva.Group();
+    cellGroup.add(cell);
+    this.layer.add(cellGroup);
+
+    let eventFunction = () => {
+      console.log("Clicked on L: " + L + ", T: " + T);
+      this.createCell(L, T, "#73ecfa", !cell.attrs.activated);
+    };
+
+    cell.on("click", eventFunction);
+
+    // Рисуем формулу (но только один раз)
+    this.createFormula(x - 105, y - 60, cellGroup, eventFunction);
+
+    this.cells[`${L},${T}`] = cellGroup; // Запоминаем соту
+    this.layer.draw();
+  }
+        createFormula(x, y, parentGroup, eventFunction) {
+    this.renderElement.innerHTML = ""; // Очищаем перед рендерингом
+
+    katex.render(
+      "Скорость \\  v \\\\ L^2T^2 \\vec{F} T^{-1}",
+      this.renderElement
+    );
+
+    html2canvas(this.renderElement, {
+      backgroundColor: "rgba(0,0,0,0)",
+    })
+      .then((canvas) => {
+        let imgObj = new Image();
+        imgObj.src = canvas.toDataURL("image/png");
+
+        let image = new Konva.Image({
+          x: x,
+          y: y,
+          image: imgObj,
+        });
+
+        image.on("click", eventFunction); // Теперь клик на формуле обновляет соту
+        parentGroup.add(image);
+        this.layer.draw();
+      })
+      .catch((err) => console.log(err));
+  }
       }
       //ReactDOM.render(<App />, document.getElementById("root"));
 
       let field = new Field(1500, 1100, "root");
-      //field.createCircle();
       for (let i = -2; i <= 2; ++i) {
         for (let j = -2; j <= 2; ++j) {
           field.createCell(i, j, "#73ecfa");
         }
       }
-      //field.createCell(0, 0, "#73ecfa");
-      //field.createFormula();
     </script>
-    <!-- <canvas width="1600" height="1600"></canvas> -->
-    <!-- <script>
-      var canvas = document.querySelector("canvas");
-      var ctx = canvas.getContext("2d");
-      const kItemSizeScale = 1;
-      const r = 130 * kItemSizeScale;
-      function polygon(x, y, N, r, color) {
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        for (let i = 0; i <= N; i++) {
-          let angle = (2 * Math.PI * i) / N;
-          ctx.lineTo(x + r * Math.sin(angle), y - r * Math.cos(angle));
-        }
-        ctx.strokeStyle = "black";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.save();
-        //Below fills the shape
-        ctx.fillStyle = color;
-        ctx.fill();
-        ctx.restore();
-      }
-
-      let L = 0;
-      let T = 0;
-      let space = 20;
-
-      function get_len_by_L(L) {
-        return 2 * r * Math.cos(Math.PI / 3) + space;
-      }
-
-      function get_x(L, T) {
-        return 500 + ((L - T) * (Math.sqrt(3) * r + space)) / 2;
-      }
-
-      function get_y(L, T) {
-        return 500 - ((L + T) * (3 * r + Math.sqrt(3) * space)) / 2;
-      }
-
-      // polygon(500, 500, 6, r, "#73ecfa");
-      for (let i = -5; i <= 5; ++i) {
-        for (let j = -5; j <= 5; ++j) {
-          polygon(get_x(i, j), get_y(i, j), 6, r, "#73ecfa");
-        }
-      }
-      ctx.translate(500, 500);
-      ctx.scale(2, 2);
-      ctx.translate(-500, -500);
-    </script> -->
   </body>
 </html>
