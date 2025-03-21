@@ -37,9 +37,37 @@ document.addEventListener("DOMContentLoaded", function() {
     <div id="root"></div> <!-- Контейнер для рендеринга Konva -->
 
     <script>
+        let centerX;
+        let centerY;
+
+        function computeLT(x, y) {
+            const hexSize = 130;
+            const spacing = 20;
+
+            // Constants used in the transformation
+            const factor1 = Math.sqrt(3) * hexSize + spacing;
+            const factor2 = 3 * hexSize + Math.sqrt(3) * spacing;
+
+            // Compute L - T and L + T
+            let L_minus_T = (2 * (x - centerX)) / factor1;
+            let L_plus_T = (2 * (centerY - y)) / factor2;
+
+            // Compute L and T
+            let L = (L_minus_T + L_plus_T) / 2;
+            let T = (L_plus_T - L_minus_T) / 2;
+
+            // Round to the nearest integer
+            L = Math.round(L);
+            T = Math.round(T);
+
+            return { L, T };
+        }
+
         class Field {
             constructor(width, height, container) {
                 this.stage = new Konva.Stage({ container, width, height });
+                centerX = this.stage.width() / 2;
+                centerY = this.stage.height() / 2;
                 this.layer = new Konva.Layer();
                 this.stage.add(this.layer);
                 this.cells = {}; // Храним все клетки, чтобы не пересоздавать формулы
@@ -52,12 +80,15 @@ document.addEventListener("DOMContentLoaded", function() {
              * Создаёт или изменяет существующую соту.
              * @param {number} L - Координата L
              * @param {number} T - Координата T
+             * @param {string} name - Название блока
+             * @param {string} symbol - Условное обозначение
+             * @param {string} value_c - Размерность в СИ
              * @param {string} color - Цвет соты
              * @param {boolean} activated - Выделена ли сота
              */
-            createCell(L, T, color = "#73ecfa", activated = false) {
-                const x = 500 + ((L - T) * (Math.sqrt(3) * 130 + 20)) / 2;
-                const y = 500 - ((L + T) * (3 * 130 + Math.sqrt(3) * 20)) / 2;
+            createCell(L, T, name, symbol, value_c, color = "#73ecfa", activated = false) {
+                const x = centerX + ((L - T) * (Math.sqrt(3) * 130 + 20)) / 2;
+                const y = centerY - ((L + T) * (3 * 130 + Math.sqrt(3) * 20)) / 2;
                 const points = [];
 
                 for (let i = 0; i <= 6; ++i) {
@@ -96,12 +127,28 @@ document.addEventListener("DOMContentLoaded", function() {
                 cellGroup.add(cell);
                 this.layer.add(cellGroup);
 
-                const clickHandler = () => this.createCell(L, T, color, !cell.attrs.activated);
+                const clickHandler = () => this.createCell(L, T, name, symbol, value_c, color, !cell.attrs.activated);
 
                 cell.on("click", clickHandler);
 
-                // Добавление формулы внутри соты
-                this.createFormula(x - 105, y - 60, cellGroup, clickHandler, 'Плотность', 'кг/м^3', 'F^2I^{-2}R');
+                // **Добавляем обработку ПКМ (правой кнопки мыши)**
+                cell.on("contextmenu", (e) => {
+                    e.evt.preventDefault(); // Отключаем стандартное контекстное меню
+
+                    const x = e.evt.clientX + window.scrollX;
+                    const y = e.evt.clientY + window.scrollY;
+
+                    console.log(`ПКМ по соте L=${L}, T=${T}, позиция: x=${x}, y=${y}`);
+
+                    if (window.pyqtObject) {
+                        window.pyqtObject.showContextMenu(L, T); // Отправляем данные в PyQt
+                    } else {
+                        console.error("PyQt объект не найден!");
+                    }
+                });
+
+                // 🔹 Добавление формулы внутри соты
+                this.createFormula(x - 105, y - 60, cellGroup, clickHandler, name, symbol, value_c);
 
                 this.cells[cellKey] = cellGroup;
                 this.layer.draw();
@@ -114,23 +161,22 @@ document.addEventListener("DOMContentLoaded", function() {
              * @param {Konva.Group} parentGroup - Группа соты
              * @param {Function} clickHandler - Обработчик клика
              */
-            createFormula(x, y, parentGroup, clickHandler, name = "Ускорение свободное", unit = "v^2", formula = "L^2T^2 \\vec{F} T^{-1}") {
+            createFormula(x, y, parentGroup, clickHandler, name, symbol, value_c) {
                 this.renderElement.innerHTML = "";
 
                 // Разделяем название на слова, если оно длинное (> 1 слова)
-                 let nameParts = name.split(" ");
+                let nameParts = name.split(" ");
                 let formattedName = nameParts.length > 1 ? nameParts.join(" \\\\ ") : nameParts[0];
 
                 // Создаем полную строку формулы с нужными разделителями
-                let katexString = `${formattedName}, \\ ${unit} \\\\ ${formula}`;
-
+                let katexString = `${formattedName}, \\ ${symbol} \\\\ ${value_c}`;
 
                 // Устанавливаем ограничение по ширине (например, 100px) для автоматического переноса
                 this.renderElement.style.width = "100px";
                 this.renderElement.style.whiteSpace = "normal";
                 this.renderElement.style.overflowWrap = "break-word";
                 this.renderElement.style.display = "inline-block"; // Позволяет измерять размер
-                this.renderElement.style.fontSize = "11px"; // Начальный размер шрифта
+                this.renderElement.style.fontSize = "10px"; // Начальный размер шрифта
 
                 katex.render(katexString, this.renderElement, {
                     throwOnError: false,
@@ -150,16 +196,92 @@ document.addEventListener("DOMContentLoaded", function() {
                     })
                     .catch(console.error);
             }
-        }
 
-        const field = new Field(1500, 1100, "root");
+            /**
+             * Обновляет данные соты (название, символ, размерность, цвет).
+             * @param {number} L - Координата L
+             * @param {number} T - Координата T
+             * @param {string} name - Название блока
+             * @param {string} symbol - Условное обозначение
+             * @param {string} value_c - Размерность в СИ
+             * @param {string} color - Новый цвет соты
+             */
+            updateCell(L, T, name, symbol, value_c, color) {
+                const cellKey = `${L},${T}`;
+                let cellGroup = this.cells[cellKey];
 
-        // Генерация сетки сот
-        for (let i = -2; i <= 2; ++i) {
-            for (let j = -2; j <= 2; ++j) {
-                field.createCell(i, j, "#73ecfa");
+                if (!cellGroup) {
+                    console.error(`❌ Сота L=${L}, T=${T} не найдена`);
+                    return;
+                }
+
+                const cell = cellGroup.getChildren()[0];
+
+                // 🔹 Обновить цвет
+                cell.fill(color);
+
+                // 🔹 Удалить старую формулу
+                cellGroup.getChildren().forEach(child => {
+                    if (child.getClassName() === "Image") {
+                        child.destroy();
+                    }
+                });
+
+                // 🔹 Создать новую формулу
+                this.createFormula(cell.x(), cell.y(), cellGroup, () => {}, name, symbol, value_c);
+
+                this.layer.draw();
+                console.log(`✅ Обновлена сота L=${L}, T=${T}`);
             }
+
+            /**
+             * Удаляет соту с холста.
+             * @param {number} L - Координата L
+             * @param {number} T - Координата T
+             */
+            removeCell(L, T) {
+                const cellKey = `${L},${T}`;
+                let cellGroup = this.cells[cellKey];
+
+                if (!cellGroup) {
+                    console.error(`❌ Нельзя удалить соту, так как её нет: L=${L}, T=${T}`);
+                    return;
+                }
+
+                cellGroup.destroy(); // Удаляем из сцены
+                delete this.cells[cellKey]; // Удаляем из мапы
+
+                this.layer.draw();
+                console.log(`🗑 Сота удалена: L=${L}, T=${T}`);
+            }
+
+
         }
+
+        field = new Field(2300, 2300, "root");
+
+     function ensureFieldExists(callback) {
+      if (window.field) {
+        callback();
+      } else {
+        setTimeout(() => ensureFieldExists(callback), 100);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      new QWebChannel(qt.webChannelTransport, function (channel) {
+        window.pyqtObject = channel.objects.backend;
+
+        ensureFieldExists(() => {
+          console.log("✅ Вызов sendAllCellsToWebView из JS");
+          if (window.pyqtObject.sendAllCellsToWebView) {
+            window.pyqtObject.sendAllCellsToWebView();
+          } else {
+            console.error("❌ Метод sendAllCellsToWebView не найден в pyqtObject");
+          }
+        });
+      });
+    });
     </script>
 </body>
 </html>
