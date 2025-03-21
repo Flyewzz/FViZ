@@ -39,8 +39,20 @@ document.addEventListener("DOMContentLoaded", function() {
     <script>
         let centerX;
         let centerY;
+        class Field {
+            constructor(width, height, container) {
+                this.stage = new Konva.Stage({ container, width, height });
+                centerX = this.stage.width() / 2;
+                centerY = this.stage.height() / 2;
+                this.layer = new Konva.Layer();
+                this.stage.add(this.layer);
+                this.cells = {}; // Храним все клетки, чтобы не пересоздавать формулы
+                this.renderElement = document.createElement("div"); // Временный рендеринг формул
+                // this.renderElement.style.visibility = "hidden";
+                document.body.appendChild(this.renderElement);
+            }
 
-        function computeLT(x, y) {
+            computeLT(x, y) {
             const hexSize = 130;
             const spacing = 20;
 
@@ -60,21 +72,17 @@ document.addEventListener("DOMContentLoaded", function() {
             L = Math.round(L);
             T = Math.round(T);
 
-            return { L, T };
-        }
+            const key = `${L},${T}`;
+            const cellGroup = this.cells[key] || null;
 
-        class Field {
-            constructor(width, height, container) {
-                this.stage = new Konva.Stage({ container, width, height });
-                centerX = this.stage.width() / 2;
-                centerY = this.stage.height() / 2;
-                this.layer = new Konva.Layer();
-                this.stage.add(this.layer);
-                this.cells = {}; // Храним все клетки, чтобы не пересоздавать формулы
-                this.renderElement = document.createElement("div"); // Временный рендеринг формул
-                // this.renderElement.style.visibility = "hidden";
-                document.body.appendChild(this.renderElement);
+            let group_name = null;
+            if (cellGroup != null) {
+                const cell = cellGroup.getChildren()[0];
+                group_name = cell.attrs.group_name;
             }
+
+            return { L, T, group_name };
+        }
 
             /**
              * Создаёт или изменяет существующую соту.
@@ -83,10 +91,11 @@ document.addEventListener("DOMContentLoaded", function() {
              * @param {string} name - Название блока
              * @param {string} symbol - Условное обозначение
              * @param {string} value_c - Размерность в СИ
+             * @param {string} group_name - Название системной группы
              * @param {string} color - Цвет соты
              * @param {boolean} activated - Выделена ли сота
              */
-            createCell(L, T, name, symbol, value_c, color = "#73ecfa", activated = false) {
+            createCell(L, T, name, symbol, value_c, group_name, color = "#73ecfa", activated = false) {
                 const x = centerX + ((L - T) * (Math.sqrt(3) * 130 + 20)) / 2;
                 const y = centerY - ((L + T) * (3 * 130 + Math.sqrt(3) * 20)) / 2;
                 const points = [];
@@ -108,6 +117,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     cell.strokeWidth(newActivated ? 6 : 2);
                     cell.dash(newActivated ? [8, 10] : null);
                     cell.attrs.activated = newActivated;
+                    cell.attrs.group_name = group_name;
+
                     this.layer.draw();
                     return;
                 }
@@ -121,13 +132,14 @@ document.addEventListener("DOMContentLoaded", function() {
                     closed: true,
                     dash: activated ? [8, 10] : null,
                     activated,
+                    group_name,
                 });
 
                 cellGroup = new Konva.Group();
                 cellGroup.add(cell);
                 this.layer.add(cellGroup);
 
-                const clickHandler = () => this.createCell(L, T, name, symbol, value_c, color, !cell.attrs.activated);
+                const clickHandler = () => this.createCell(L, T, name, symbol, value_c, group_name, color, !cell.attrs.activated);
 
                 cell.on("click", clickHandler);
 
@@ -204,7 +216,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     .catch(console.error);
             }
 
-            updateCell(L, T, name, symbol, value_c, color) {
+            updateCell(L, T, name, symbol, value_c, group_name, color) {
                 const cellKey = `${L},${T}`;
                 const oldGroup = this.cells[cellKey];
 
@@ -221,7 +233,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 this.layer.draw();
 
                 // 🔹 Создаём новую с теми же координатами
-                this.createCell(L, T, name, symbol, value_c, color, false);
+                this.createCell(L, T, name, symbol, value_c, group_name, color, false);
         }
 
             /**

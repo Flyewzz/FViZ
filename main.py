@@ -1,12 +1,13 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QAction, QMenu
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWebChannel import QWebChannel
-from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal, QPoint
+from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal, QPoint, QVariant
 from PyQt5.QtGui import QCursor
 from physical_web_view import PhysicalWebEngineView
 from system_group import SystemGroup
 from edit_cell_group import EditCellDialog
 from physical_value import PhysicalQuantity
+from typing import Optional
 import sys
 import res
 
@@ -71,24 +72,31 @@ class Backend(QObject):
         print(f"Клик по соте: {cellData}")  # Выводим в консоль
         self.updateCell.emit(f"Выбрана сота {cellData}")  # Отправляем обратно в WebView
 
-    @pyqtSlot(int, int, int, int)
-    def showContextMenu(self, L, T, x, y):
+    @pyqtSlot(int, int, QVariant, int, int)
+    def showContextMenu(self, L, T, group_name, x, y):
         """ Метод вызывается при ПКМ на соте """
-        print(f"ПКМ на соте с координатами: L={L}, T={T}, позиция: x={x}, y={y}")
+        print(f"ПКМ на соте с координатами: L={L}, T={T}, позиция: x={x}, y={y}, group_name={group_name}")
 
         # Показываем контекстное меню
         menu = QMenu()
-        edit_action = QAction("Редактировать", menu)
-        delete_action = QAction("Удалить", menu)
-        replace_action = QAction("Заменить", menu)
 
-        edit_action.triggered.connect(lambda: self.editCell(L, T))
-        delete_action.triggered.connect(lambda: self.deleteCell(L, T))
-        replace_action.triggered.connect(lambda: self.replaceCell(L, T))
+        if group_name is not None:
+            edit_action = QAction("Редактировать", menu)
+            delete_action = QAction("Удалить", menu)
+            replace_action = QAction("Заменить", menu)
 
-        menu.addAction(edit_action)
-        menu.addAction(delete_action)
-        menu.addAction(replace_action)
+
+            edit_action.triggered.connect(lambda: self.editCell(L, T))
+            delete_action.triggered.connect(lambda: self.deleteCell(L, T, group_name))
+            replace_action.triggered.connect(lambda: self.replaceCell(L, T))
+
+            menu.addAction(edit_action)
+            menu.addAction(delete_action)
+            menu.addAction(replace_action)
+
+        create_action = QAction("Создать", menu)
+        # create_action.triggered.connect(None)
+        menu.addAction(create_action)
 
         # 🔹 Adjust final menu position
         adjusted_x = x  # `x` is already in global coordinates
@@ -109,15 +117,18 @@ class Backend(QObject):
         dialog.exec_()
 
     @pyqtSlot(int, int)
-    def deleteCell(self, L, T):
+    def deleteCell(self, L, T, group_name):
         """Удаляет физическую величину и заменяет её другой (если возможно)"""
-        print(f"Удаляем физ. величину на соте: L={L}, T={T}")
+        print(f"Удаляем физ. величину на соте: L={L}, T={T} group_name={group_name}")
 
         # 🔹 Найти текущую физ. величину
         current_quantity = None
         current_group = None
 
         for group in self.system_groups:
+            if group.name != group_name:
+                continue
+
             current_quantity = group.get_quantity(L, T)
             if current_quantity:
                 current_group = group
@@ -131,11 +142,12 @@ class Backend(QObject):
         current_group.remove_quantity(L, T)
 
         # 🔹 Найти замену в той же группе
-        new_quantity = current_group.get_next_quantity(L, T)
+        new_quantities = self.find_quantities_in_other_groups(L, T, current_group)
 
-        if new_quantity:
-            print(f"🔄 Заменяем удаленную величину на: {new_quantity.name}")
-            self.updateWebViewCell(L, T, new_quantity)
+        print(new_quantities)
+        if len(new_quantities) > 0:
+            print(f"🔄 Заменяем удаленную величину на: {new_quantities[0].name}")
+            self.updateWebViewCell(L, T, new_quantities[0])
         else:
             print("🗑 Полностью удаляем соту")
             self.removeWebViewCell(L, T)
@@ -160,12 +172,8 @@ class Backend(QObject):
             return
 
         # 🔹 Найти замену среди других системных групп
-        for group in self.system_groups:
-            if group != current_group:
-                new_quantity = group.get_quantity(L, T)
-                if new_quantity:
-                    break
-        else:
+        new_quantity = self.find_quantities_in_other_groups(L, T, current_group)
+        if new_quantity:
             print("❌ Нет заменяемых величин")
             return
 
@@ -182,7 +190,7 @@ class Backend(QObject):
 
         script = "\n".join(
             [
-                f"field.createCell({L}, {T}, '{cell.name}', '{cell.symbol}', '{cell.value_c}', '{cell.group.color}');"
+                f"field.createCell({L}, {T}, '{cell.name}', '{cell.symbol}', '{cell.value_c}', '{cell.group.name}', '{cell.group.color}');"
                 for (L, T), cell in self.cells.items()
             ]
         )
@@ -205,7 +213,11 @@ class Backend(QObject):
         if current_cell.group != new_group:
             print(f"🔄 Перемещаем соту (L={L}, T={T}) в {new_group.name}")
             del self.cells[(L, T)]
+
             new_cell = PhysicalQuantity(new_name, new_symbol, new_unit, new_value_c, new_group, L, T)
+            current_cell.group.remove_quantity(L, T)
+
+            new_group.add_quantity(new_cell)
             self.cells[(L, T)] = new_cell
         else:
             print(f"✏ Обновляем данные соты (L={L}, T={T}) в {new_group.name}")
@@ -217,16 +229,27 @@ class Backend(QObject):
         # 🔹 Обновляем WebView
         self.updateWebViewCell(L, T, self.cells[(L, T)])
 
+    def find_quantities_in_other_groups(self, L, T, current_group):
+        """Ищет физические величины с теми же координатами (L, T) в другой системной группе"""
+        quantities = []
+        for group in self.system_groups:
+            if group != current_group:
+                quantity = group.get_quantity(L, T)
+                if quantity:
+                    quantities.append(quantity)
+
+        return quantities
+
     def createWebViewCell(self, L, T, cell):
         """Создает соту в WebView"""
         self.webView.page().runJavaScript(f"""
-            window.field.createCell({L}, {T}, '{cell.name}', '{cell.symbol}', '{cell.value_c}', '{cell.group.color}');
+            field.createCell({L}, {T}, '{cell.name}', '{cell.symbol}', '{cell.value_c}', '{cell.group.name}', '{cell.group.color}');
         """)
 
     def updateWebViewCell(self, L, T, cell):
         """Обновляет соту в WebView"""
         self.webView.page().runJavaScript(f"""
-            window.field.updateCell({L}, {T}, '{cell.name}', '{cell.symbol}', '{cell.value_c}', '{cell.group.color}');
+            field.updateCell({L}, {T}, '{cell.name}', '{cell.symbol}', '{cell.value_c}', '{cell.group.name}', '{cell.group.color}');
         """)
 
     def removeWebViewCell(self, L, T):

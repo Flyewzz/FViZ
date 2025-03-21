@@ -20,16 +20,16 @@ class PhysicalWebEngineView(QWebEngineView):
                 const x = {pos.x()} + window.scrollX;
                 const y = {pos.y()} + window.scrollY;
 
-                const point = computeLT(x, y);
+                const cell = field.computeLT(x, y);
 
-                if (window.pyqtObject && point) {{
-                    const L = parseInt(point.L);
-                    const T = parseInt(point.T);
+                if (window.pyqtObject && cell) {{
+                    const L = parseInt(cell.L);
+                    const T = parseInt(cell.T);
 
                     const globalX = {global_pos.x()};
                     const globalY = {global_pos.y()};
 
-                    window.pyqtObject.showContextMenu(L, T, globalX, globalY);
+                    window.pyqtObject.showContextMenu(L, T, cell.group_name, globalX, globalY);
                 }}
             }})();
         """)
