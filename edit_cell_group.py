@@ -1,16 +1,18 @@
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QComboBox, QPushButton, QLineEdit, QHBoxLayout, QWidget
 from PyQt5.QtGui import QColor, QPalette
+from physical_value import PhysicalQuantity
 
 
 class EditCellDialog(QDialog):
     """Диалоговое окно для редактирования соты"""
 
-    def __init__(self, backend, L, T, parent=None):
+    def __init__(self, backend, L, T, parent=None, create_mode=False):
         super().__init__(parent)
-        self.setWindowTitle("Редактировать соту")
+        self.setWindowTitle("Создание физической величины" if create_mode else "Редактирование физической величины")
         self.backend = backend
         self.L = L
         self.T = T
+        self.create_mode = create_mode
 
         self.setMinimumSize(400, 300)
 
@@ -25,17 +27,15 @@ class EditCellDialog(QDialog):
                 self.cell = cell
                 break
 
-        print(self.cell)
-        if not self.cell:
+        if not self.cell and not self.create_mode:
             self.close()
             return
 
-        # print(self.cell)
         # 🔹 Поля для ввода данных
-        self.name_input = QLineEdit(self.cell.name)
-        self.symbol_input = QLineEdit(self.cell.symbol)
-        self.unit_input = QLineEdit(self.cell.unit)
-        self.value_c_input = QLineEdit(self.cell.value_c)
+        self.name_input = QLineEdit("" if create_mode else self.cell.name)
+        self.symbol_input = QLineEdit("" if create_mode else self.cell.symbol)
+        self.unit_input = QLineEdit("" if create_mode else self.cell.unit)
+        self.value_c_input = QLineEdit("" if create_mode else self.cell.value_c)
 
         layout.addWidget(QLabel(f"Редактирование соты (L={L}, T={T})"))
         layout.addWidget(QLabel("Название:"))
@@ -52,7 +52,6 @@ class EditCellDialog(QDialog):
         self.color_preview = QWidget()  # Виджет для отображения цвета группы
 
         self.color_preview.setFixedSize(20, 20)
-        self.updateGroupColor(self.cell.group.color)
 
         group_layout = QHBoxLayout()
         group_layout.addWidget(QLabel("Системная группа:"))
@@ -61,13 +60,22 @@ class EditCellDialog(QDialog):
 
         layout.addLayout(group_layout)
 
+        # 🔹 Заполняем селектор
         for group in self.backend.system_groups:
             self.group_selector.addItem(group.name, group)
-            if group == self.cell.group:
-                self.group_selector.setCurrentIndex(self.group_selector.count() - 1)
+
+        # 🔹 Если в режиме редактирования — выбрать текущую группу и показать цвет
+        if not self.create_mode and self.cell:
+            index = self.group_selector.findData(self.cell.group)
+            if index != -1:
+                self.group_selector.setCurrentIndex(index)
+                self.updateGroupColor(self.cell.group.color)
+        else:
+            # В режиме создания — выбрать первую группу по умолчанию
+            self.group_selector.setCurrentIndex(0)
+            self.updateGroupColor(self.group_selector.currentData().color)
 
         self.group_selector.currentIndexChanged.connect(self.changeGroupColor)
-
         # 🔹 Кнопка сохранения
         save_button = QPushButton("Сохранить")
         save_button.clicked.connect(self.save_changes)
@@ -96,6 +104,13 @@ class EditCellDialog(QDialog):
         new_unit = self.unit_input.text()
         new_value_c = self.value_c_input.text()
 
-        # 🔹 Отправляем изменения в Backend
-        self.backend.applyEditCellChanges(self.L, self.T, new_name, new_symbol, new_unit, new_value_c, selected_group)
+        if self.create_mode:
+            new_cell = PhysicalQuantity(new_name, new_symbol, new_unit, new_value_c, selected_group, self.L, self.T)
+            self.backend.cells[(self.L, self.T)] = new_cell
+            selected_group.add_quantity(new_cell)
+            self.backend.createWebViewCell(self.L, self.T, new_cell)
+        else:
+            self.backend.applyEditCellChanges(self.L, self.T, new_name, new_symbol, new_unit, new_value_c,
+                                              selected_group)
+
         self.accept()

@@ -85,7 +85,6 @@ class Backend(QObject):
             delete_action = QAction("Удалить", menu)
             replace_action = QAction("Заменить", menu)
 
-
             edit_action.triggered.connect(lambda: self.editCell(L, T))
             delete_action.triggered.connect(lambda: self.deleteCell(L, T, group_name))
             replace_action.triggered.connect(lambda: self.replaceCell(L, T))
@@ -95,7 +94,7 @@ class Backend(QObject):
             menu.addAction(replace_action)
 
         create_action = QAction("Создать", menu)
-        # create_action.triggered.connect(None)
+        create_action.triggered.connect(lambda: self.createCellDialog(L, T))
         menu.addAction(create_action)
 
         # 🔹 Adjust final menu position
@@ -106,6 +105,13 @@ class Backend(QObject):
 
         # 🖱 Show the menu at the **exact** right-click position
         menu.exec_(QPoint(adjusted_x, adjusted_y))
+
+    @pyqtSlot(int, int)
+    def createCellDialog(self, L, T):
+        print(f"Создаем новую соту: L={L}, T={T}")
+        app = QApplication.instance()
+        dialog = EditCellDialog(self, L, T, parent=app.activeWindow(), create_mode=True)
+        dialog.exec_()
 
     @pyqtSlot(int, int)
     def editCell(self, L, T):
@@ -273,8 +279,6 @@ class MainWindow(QMainWindow):
 
         self.container.setLayout(self.layout)
         self.setCentralWidget(self.container)
-
-
 
         self.backend = Backend(self.webView)
 
