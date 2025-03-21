@@ -171,68 +171,58 @@ document.addEventListener("DOMContentLoaded", function() {
                 // Создаем полную строку формулы с нужными разделителями
                 let katexString = `${formattedName}, \\ ${symbol} \\\\ ${value_c}`;
 
-                // Устанавливаем ограничение по ширине (например, 100px) для автоматического переноса
-                this.renderElement.style.width = "100px";
-                this.renderElement.style.whiteSpace = "normal";
-                this.renderElement.style.overflowWrap = "break-word";
-                this.renderElement.style.display = "inline-block"; // Позволяет измерять размер
-                this.renderElement.style.fontSize = "10px"; // Начальный размер шрифта
+                // Создаём временный div, но НЕ добавляем в body
+                const tempEl = document.createElement("div");
+                tempEl.style.width = "100px";
+                tempEl.style.whiteSpace = "normal";
+                tempEl.style.overflowWrap = "break-word";
+                tempEl.style.fontSize = "10px";
+                tempEl.style.display = "inline-block";
+                tempEl.style.position = "absolute"; // Не влияет на макет
+                tempEl.style.left = "-9999px"; // Прячем вне экрана
+                document.body.appendChild(tempEl);
 
-                katex.render(katexString, this.renderElement, {
+                katex.render(katexString, tempEl, {
                     throwOnError: false,
                     displayMode: true // Включает блочный режим
                 });
 
-                html2canvas(this.renderElement, { backgroundColor: "rgba(0,0,0,0)" })
+                html2canvas(tempEl, { backgroundColor: "rgba(0,0,0,0)" })
                     .then((canvas) => {
+                        document.body.removeChild(tempEl);
+
                         const imgObj = new Image();
+                        imgObj.onload = () => {
+                            const image = new Konva.Image({ x, y, image: imgObj });
+                            image.on("click", clickHandler);
+                            parentGroup.add(image);
+                            this.layer.draw();
+                        };
+
                         imgObj.src = canvas.toDataURL("image/png");
-
-                        const image = new Konva.Image({ x, y, image: imgObj });
-
-                        image.on("click", clickHandler); // Клик на формуле обрабатывает соту
-                        parentGroup.add(image);
-                        this.layer.draw();
                     })
                     .catch(console.error);
             }
 
-            /**
-             * Обновляет данные соты (название, символ, размерность, цвет).
-             * @param {number} L - Координата L
-             * @param {number} T - Координата T
-             * @param {string} name - Название блока
-             * @param {string} symbol - Условное обозначение
-             * @param {string} value_c - Размерность в СИ
-             * @param {string} color - Новый цвет соты
-             */
             updateCell(L, T, name, symbol, value_c, color) {
                 const cellKey = `${L},${T}`;
-                let cellGroup = this.cells[cellKey];
+                const oldGroup = this.cells[cellKey];
 
-                if (!cellGroup) {
+                if (!oldGroup) {
                     console.error(`❌ Сота L=${L}, T=${T} не найдена`);
                     return;
                 }
 
-                const cell = cellGroup.getChildren()[0];
+                // 🔹 Удаляем старую группу
+                oldGroup.destroy();
+                delete this.cells[cellKey];
 
-                // 🔹 Обновить цвет
-                cell.fill(color);
-
-                // 🔹 Удалить старую формулу
-                cellGroup.getChildren().forEach(child => {
-                    if (child.getClassName() === "Image") {
-                        child.destroy();
-                    }
-                });
-
-                // 🔹 Создать новую формулу
-                this.createFormula(cell.x(), cell.y(), cellGroup, () => {}, name, symbol, value_c);
-
+                // 🔹 Перерисовка слоя
                 this.layer.draw();
-                console.log(`✅ Обновлена сота L=${L}, T=${T}`);
-            }
+
+                // 🔹 Создаём новую с теми же координатами
+                this.createCell(L, T, name, symbol, value_c, color, false);
+        }
 
             /**
              * Удаляет соту с холста.

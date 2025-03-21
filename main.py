@@ -94,11 +94,6 @@ class Backend(QObject):
         adjusted_x = x  # `x` is already in global coordinates
         adjusted_y = y  # `y` is already in global coordinates
 
-        # # 🔹 Convert web page (x, y) to **global** screen coordinates
-        # webView_offset = self.webView.mapToGlobal(QPoint(0, 0))  # Top-left corner of WebView
-        # adjusted_x = webView_offset.x() + x
-        # adjusted_y = webView_offset.y() + y
-
         print(f"Adjusted global position: x={adjusted_x}, y={adjusted_y}")
 
         # 🖱 Show the menu at the **exact** right-click position

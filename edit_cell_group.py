@@ -94,8 +94,8 @@ class EditCellDialog(QDialog):
         new_name = self.name_input.text()
         new_symbol = self.symbol_input.text()
         new_unit = self.unit_input.text()
-        new_formula = self.value_c_input.text()
+        new_value_c = self.value_c_input.text()
 
         # 🔹 Отправляем изменения в Backend
-        self.backend.applyEditCellChanges(self.L, self.T, new_name, new_symbol, new_unit, new_formula, selected_group)
+        self.backend.applyEditCellChanges(self.L, self.T, new_name, new_symbol, new_unit, new_value_c, selected_group)
         self.accept()
