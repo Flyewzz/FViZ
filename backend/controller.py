@@ -40,19 +40,34 @@ class Backend(QObject):
             menu.addAction(edit)
             menu.addAction(delete)
 
-        create = QAction("Создать", menu)
-        create.triggered.connect(lambda: self.createCellDialog(L, T))
-        menu.addAction(create)
+        # Вычисляем, какие группы уже заняты на этих координатах
+        used_groups = [
+            group
+            for group in self.service.get_all_groups()
+            if group.get_quantity(L, T) is not None
+        ]
+
+        all_groups = self.service.get_all_groups()
+        if len(used_groups) != len(all_groups):
+            create = QAction("Создать", menu)
+            create.triggered.connect(lambda: self.createCellDialog(L, T, used_groups))
+            menu.addAction(create)
         menu.exec_(QPoint(x, y))
 
-    @pyqtSlot(int, int)
-    def createCellDialog(self, L, T):
+    def createCellDialog(self, L, T, exclude_groups):
         print(f"Создание соты: L={L}, T={T}")
         app = QApplication.instance()
-        dialog = EditCellDialog(self.service, L, T, parent=app.activeWindow(), create_mode=True)
+
+        dialog = EditCellDialog(
+            self.service,
+            L,
+            T,
+            parent=app.activeWindow(),
+            create_mode=True,
+            exclude_groups=exclude_groups,
+        )
         dialog.exec_()
 
-    @pyqtSlot(int, int)
     def editCell(self, L, T):
         app = QApplication.instance()
         dialog = EditCellDialog(self.service, L, T, parent=app.activeWindow())

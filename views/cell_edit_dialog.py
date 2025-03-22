@@ -6,13 +6,14 @@ from PyQt5.QtGui import QColor, QPalette
 class EditCellDialog(QDialog):
     """Диалоговое окно для редактирования или создания соты"""
 
-    def __init__(self, backend, L, T, parent=None, create_mode=False):
+    def __init__(self, backend, L, T, parent=None, create_mode=False, exclude_groups=[]):
         super().__init__(parent)
         self.setWindowTitle("Создать соту" if create_mode else "Редактировать соту")
         self.backend = backend
         self.L = L
         self.T = T
         self.create_mode = create_mode
+        self.exclude_groups = exclude_groups
 
         self.setMinimumSize(400, 300)
 
@@ -56,6 +57,11 @@ class EditCellDialog(QDialog):
         layout.addLayout(group_layout)
 
         for group in self.backend.system_groups:
+            if len(self.exclude_groups) > 0:
+                if group.name.lower() in [
+                    g.name.lower() for g in self.exclude_groups
+                ]:
+                    continue
             self.group_selector.addItem(group.name, group)
             if not create_mode and group == self.cell.group:
                 self.group_selector.setCurrentIndex(self.group_selector.count() - 1)

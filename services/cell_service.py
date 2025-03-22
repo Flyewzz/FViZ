@@ -115,6 +115,9 @@ class CellService:
     def remove_web_cell(self, L, T):
         self.webView.page().runJavaScript(f"field.removeCell({L}, {T});")
 
+    def get_all_groups(self):
+        return self.system_groups
+
     def get_all_cells(self):
         return self.cells
 
