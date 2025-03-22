@@ -81,17 +81,23 @@ class Backend(QObject):
         menu = QMenu()
 
         if group_name is not None:
+            other_quantities = self.find_quantities_in_other_groups(L, T, group_name)
+            if len(other_quantities) > 0:
+                replace_menu = QMenu("Заменить", menu)
+                for quantity in other_quantities:
+                    action = QAction(quantity.name, replace_menu)
+                    action.triggered.connect(lambda _, q=quantity: self.replaceCell(L, T, q))
+                    replace_menu.addAction(action)
+                menu.addMenu(replace_menu)
+
             edit_action = QAction("Редактировать", menu)
             delete_action = QAction("Удалить", menu)
-            replace_action = QAction("Заменить", menu)
 
             edit_action.triggered.connect(lambda: self.editCell(L, T))
             delete_action.triggered.connect(lambda: self.deleteCell(L, T, group_name))
-            replace_action.triggered.connect(lambda: self.replaceCell(L, T))
 
             menu.addAction(edit_action)
             menu.addAction(delete_action)
-            menu.addAction(replace_action)
 
         create_action = QAction("Создать", menu)
         create_action.triggered.connect(lambda: self.createCellDialog(L, T))
@@ -158,37 +164,12 @@ class Backend(QObject):
             print("🗑 Полностью удаляем соту")
             self.removeWebViewCell(L, T)
 
-    @pyqtSlot(int, int)
-    def replaceCell(self, L, T):
-        """Заменяет физическую величину в данных и обновляет WebView"""
-        print(f"Заменяем физ. величину на соте: L={L}, T={T}")
+    def replaceCell(self, L, T, quantity):
+        """Заменяет текущую физическую величину на указанную"""
+        print(f"🔄 Замена соты L={L}, T={T} на {quantity.name} из группы {quantity.group.name}")
 
-        # 🔹 Найти текущую физическую величину
-        current_quantity = None
-        current_group = None
-
-        for group in self.system_groups:
-            current_quantity = group.get_quantity(L, T)
-            if current_quantity:
-                current_group = group
-                break
-
-        if not current_quantity:
-            print("❌ Не найдено физ. величины для замены")
-            return
-
-        # 🔹 Найти замену среди других системных групп
-        new_quantity = self.find_quantities_in_other_groups(L, T, current_group)
-        if new_quantity:
-            print("❌ Нет заменяемых величин")
-            return
-
-        # 🔹 Обновить данные
-        current_group.remove_quantity(L, T)
-        new_quantity.group.add_quantity(new_quantity)
-
-        # 🔹 Обновить WebView
-        self.updateWebViewCell(L, T, new_quantity)
+        # 🔹 Обновляем WebView
+        self.updateWebViewCell(L, T, quantity)
 
     @pyqtSlot()
     def sendAllCellsToWebView(self):
@@ -235,11 +216,11 @@ class Backend(QObject):
         # 🔹 Обновляем WebView
         self.updateWebViewCell(L, T, self.cells[(L, T)])
 
-    def find_quantities_in_other_groups(self, L, T, current_group):
+    def find_quantities_in_other_groups(self, L, T, current_group_name):
         """Ищет физические величины с теми же координатами (L, T) в другой системной группе"""
         quantities = []
         for group in self.system_groups:
-            if group != current_group:
+            if group.name != current_group_name:
                 quantity = group.get_quantity(L, T)
                 if quantity:
                     quantities.append(quantity)

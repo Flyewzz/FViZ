@@ -108,7 +108,10 @@ class EditCellDialog(QDialog):
             new_cell = PhysicalQuantity(new_name, new_symbol, new_unit, new_value_c, selected_group, self.L, self.T)
             self.backend.cells[(self.L, self.T)] = new_cell
             selected_group.add_quantity(new_cell)
-            self.backend.createWebViewCell(self.L, self.T, new_cell)
+
+            quantities = self.backend.find_quantities_in_other_groups(self.L, self.T, selected_group.name)
+            if len(quantities) == 0:
+                self.backend.createWebViewCell(self.L, self.T, new_cell)
         else:
             self.backend.applyEditCellChanges(self.L, self.T, new_name, new_symbol, new_unit, new_value_c,
                                               selected_group)
