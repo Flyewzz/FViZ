@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QAction
 from PyQt5.QtWebChannel import QWebChannel
 from views.physical_web_view import PhysicalWebEngineView
 from backend.controller import Backend
@@ -33,6 +33,17 @@ class MainWindow(QMainWindow):
 
         # Устанавливаем канал после загрузки страницы
         self.webView.page().loadFinished.connect(self.initWebChannel)
+
+        menu_bar = self.menuBar()
+        settings_menu = menu_bar.addMenu("Настройки")
+        group_action = QAction("Системные группы ФВ", self)
+        group_action.triggered.connect(self.open_group_dialog)
+        settings_menu.addAction(group_action)
+
+    def open_group_dialog(self):
+        from views.system_groups_dialog import SystemGroupsDialog
+        dialog = SystemGroupsDialog(self.backend.service.system_groups, self)
+        dialog.exec_()
 
     def initWebChannel(self):
         self.webView.page().runJavaScript("""
