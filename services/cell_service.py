@@ -1,4 +1,5 @@
 # services/cell_service.py
+from models.law_group import LawGroup
 from models.system_group import SystemGroup
 from models.physical_value import PhysicalQuantity
 
@@ -11,6 +12,14 @@ class CellService:
             SystemGroup("Группа 3", "#ecfa73", G=3, k=3)
         ]
         self.cells = {}
+        self.selected = []
+
+        self.law_groups = [
+            LawGroup("Механика", "#ffaaaa"),
+            LawGroup("Электродинамика", "#aaffaa"),
+            LawGroup("Термодинамика", "#aaaaff"),
+        ]
+
         self._fill_cells()
         self.send_all_to_webview()
 
@@ -120,6 +129,60 @@ class CellService:
 
     def get_all_cells(self):
         return self.cells
+
+    def get_cell_by_coords(self, L, T, group_name):
+        for group in self.system_groups:
+            if group.name == group_name:
+                return group.cells.get((L, T))
+        return None
+
+    def toggle_selection(self, cell):
+        if cell in self.selected:
+            self.selected.remove(cell)
+        else:
+            print('selected', cell)
+            self.selected.append(cell)
+
+    def check_parallelogram(self):
+        if len(self.selected) not in (3, 4):
+            print("❌ Недостаточно выделенных элементов")
+            return None
+
+        items = self.selected.copy()
+
+        # 1. Сортировка по L убыванию, затем T убыванию — для e1
+        items.sort(key=lambda q: (-q.L, -q.T))
+        e1 = items[0]
+
+        # 2. Остальные сортируем по L и T по возрастанию
+        rest = items[1:]
+        rest.sort(key=lambda q: (q.L, q.T))
+
+        if len(rest) < 2:
+            print("❌ Недостаточно оставшихся для параллелограмма")
+            return None
+
+        e2, e3 = rest[0], rest[1]
+        e4 = rest[2] if len(items) == 4 else e3  # как в оригинале
+
+        def log_and_check(attr_name, fn):
+            a = fn(e1) + fn(e2)
+            b = fn(e3) + fn(e4)
+            result = a == b
+            print(f"⚖️  Проверка {attr_name}: {fn(e1)}+{fn(e2)} == {fn(e3)}+{fn(e4)} -> {'✅' if result else '❌'}")
+            return result
+
+        if all([
+            log_and_check("G", lambda q: q.group.G),
+            log_and_check("k", lambda q: q.group.k),
+            log_and_check("L", lambda q: q.L),
+            log_and_check("T", lambda q: q.T),
+        ]):
+            print("✅ Параллелограмм найден — передаём [e1, e3, e2, e4]")
+            return [e1, e3, e2, e4]
+
+        print("❌ Условия не выполнены")
+        return None
 
     def send_all_to_webview(self):
         script = "\n".join(

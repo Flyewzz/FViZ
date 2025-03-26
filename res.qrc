@@ -1,6 +1,14 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
-    <file>qwebchannel.js</file>
-    <file>jquery.min.js</file>
+    <file>res/js/jquery.min.js</file>
+
+    <file>res/js/katex.min.js</file>
+    <file>res/css/katex.min.css</file>
+
+    <file>res/js/qwebchannel.js</file>
+
+    <file>res/js/html2canvas.min.js</file>
+
+    <file>res/js/konva.min.js</file>
 </qresource>
 </RCC>

@@ -7,10 +7,10 @@
     <title>Physics Grid</title>
 
     <!-- Подключение KaTeX -->
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.13.18/dist/katex.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.13.18/dist/katex.min.css" />
+    <script src="qrc:/res/js/katex.min.js"></script>
+    <link rel="stylesheet" href="qrc:/res/css/katex.min.css" />
 
-    <script src="https://cdn.jsdelivr.net/npm/qwebchannel@5.9.0/qwebchannel.js"></script>
+    <script src="qrc:/res/js/qwebchannel.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     if (typeof qt !== "undefined") {
@@ -24,16 +24,15 @@ document.addEventListener("DOMContentLoaded", function() {
 </script>
 
     <!-- Другие библиотеки -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/konva/7.2.5/konva.min.js"></script>
+    <script src="qrc:/res/js/jquery.min.js"></script>
+    <script src="qrc:/res/js/html2canvas.min.js"></script>
+    <script src="qrc:/res/js/konva.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; }
     </style>
 </head>
 
 <body>
-    <h2>Физическая система</h2>
     <div id="root"></div> <!-- Контейнер для рендеринга Konva -->
 
     <script>
@@ -139,7 +138,12 @@ document.addEventListener("DOMContentLoaded", function() {
                 cellGroup.add(cell);
                 this.layer.add(cellGroup);
 
-                const clickHandler = () => this.createCell(L, T, name, symbol, value_c, group_name, color, !cell.attrs.activated);
+                const clickHandler = () => {
+                    this.createCell(L, T, name, symbol, value_c, group_name, color, !cell.attrs.activated);
+                    if (window.pyqtObject) {
+                        window.pyqtObject.onCellSelected(L, T, group_name);
+                    }
+                }
 
                 cell.on("click", clickHandler);
 
@@ -257,6 +261,35 @@ document.addEventListener("DOMContentLoaded", function() {
                 console.log(`🗑 Сота удалена: L=${L}, T=${T}`);
             }
 
+
+            drawParallelogram(points) {
+                // Удалить старый полигон если есть
+                if (field.parallelogram) {
+                    field.parallelogram.destroy();
+                    field.parallelogram = null;
+                }
+
+                // Преобразуем LT в координаты (пример, зависит от твоей формулы computeLT → x, y)
+                const screenPoints = points.map(({ L, T }) => {
+                    const x = centerX + ((L - T) * (Math.sqrt(3) * 130 + 20)) / 2;
+                    const y = centerY - ((L + T) * (3 * 130 + Math.sqrt(3) * 20)) / 2;
+                    return [x, y];
+                });
+
+                const flatPoints = screenPoints.flat(); // Konva требует [x1, y1, x2, y2, ...]
+
+                const polygon = new Konva.Line({
+                    points: flatPoints,
+                    closed: true,
+                    stroke: 'black',
+                    strokeWidth: 4,
+                    dash: [6, 4],
+                });
+
+                field.layer.add(polygon);
+                field.parallelogram = polygon;
+                field.layer.draw();
+            }
 
         }
 

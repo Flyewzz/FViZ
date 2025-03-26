@@ -1,8 +1,10 @@
 # backend/controller.py
+
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal, QPoint, QVariant
 from PyQt5.QtWidgets import QApplication, QAction, QMenu
 from views.cell_edit_dialog import EditCellDialog
 from services.cell_service import CellService
+from views.laws_dialog import LawDialog
 
 
 class Backend(QObject):
@@ -53,6 +55,31 @@ class Backend(QObject):
             create.triggered.connect(lambda: self.createCellDialog(L, T, used_groups))
             menu.addAction(create)
         menu.exec_(QPoint(x, y))
+
+    @pyqtSlot(int, int, str)
+    def onCellSelected(self, L, T, group_name):
+        quantity = self.service.get_cell_by_coords(L, T, group_name)
+        if quantity:
+            self.service.toggle_selection(quantity)
+            selected_quantities = self.service.check_parallelogram()
+            if selected_quantities:
+                self.draw_parallelogram(selected_quantities)
+                self.openLawDialog(selected_quantities)
+
+    @pyqtSlot(list)
+    def openLawDialog(self, quantities):
+        # теперь отображаем форму в Python
+        app = QApplication.instance()
+        dialog = LawDialog(self.service, quantities, parent=app.activeWindow())
+        dialog.show()
+
+    @pyqtSlot(list)
+    def draw_parallelogram(self, quantities):
+        js_array = "[" + ", ".join(
+            f"{{L: {q.L}, T: {q.T}}}" for q in quantities
+        ) + "]"
+
+        self.webView.page().runJavaScript(f"field.drawParallelogram({js_array});")
 
     def createCellDialog(self, L, T, exclude_groups):
         print(f"Создание соты: L={L}, T={T}")
