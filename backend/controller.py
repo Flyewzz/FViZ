@@ -62,24 +62,47 @@ class Backend(QObject):
         if quantity:
             self.service.toggle_selection(quantity)
             selected_quantities = self.service.check_parallelogram()
-            if selected_quantities:
-                self.draw_parallelogram(selected_quantities)
-                self.openLawDialog(selected_quantities)
 
-    @pyqtSlot(list)
-    def openLawDialog(self, quantities):
+            if selected_quantities:
+                selected_names = sorted(q.name for q in selected_quantities)
+
+                existing_law = None
+                for group in self.service.law_groups:
+                    for law in group.laws:
+                        if sorted(law.variables) == selected_names:
+                            existing_law = law
+                            break
+                    if existing_law:
+                        break
+
+                if existing_law:
+                    self.draw_parallelogram(selected_quantities, color=existing_law.group.color)
+                    self.openLawDialog(selected_quantities, existing_law)
+                else:
+                    self.draw_parallelogram(selected_quantities)
+                    self.openLawDialog(selected_quantities)
+            else:
+                self.clear_parallelogram()
+
+    def openLawDialog(self, quantities, existing_law=None):
         # теперь отображаем форму в Python
         app = QApplication.instance()
-        dialog = LawDialog(self.service, quantities, parent=app.activeWindow())
+        dialog = LawDialog(self.service, quantities, existing_law, parent=app.activeWindow())
         dialog.show()
 
     @pyqtSlot(list)
-    def draw_parallelogram(self, quantities):
+    def draw_parallelogram(self, quantities, color=None):
         js_array = "[" + ", ".join(
             f"{{L: {q.L}, T: {q.T}}}" for q in quantities
         ) + "]"
 
-        self.webView.page().runJavaScript(f"field.drawParallelogram({js_array});")
+        if color:
+            self.webView.page().runJavaScript(f"field.drawParallelogram({js_array}, '{color}');")
+        else:
+            self.webView.page().runJavaScript(f"field.drawParallelogram({js_array});")
+
+    def clear_parallelogram(self):
+        self.webView.page().runJavaScript("field.clearParallelogram();")
 
     def createCellDialog(self, L, T, exclude_groups):
         print(f"Создание соты: L={L}, T={T}")

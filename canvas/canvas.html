@@ -262,7 +262,7 @@ document.addEventListener("DOMContentLoaded", function() {
             }
 
 
-            drawParallelogram(points) {
+            drawParallelogram(points, color) {
                 // Удалить старый полигон если есть
                 if (field.parallelogram) {
                     field.parallelogram.destroy();
@@ -281,9 +281,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 const polygon = new Konva.Line({
                     points: flatPoints,
                     closed: true,
-                    stroke: 'black',
+                    stroke: color ?? 'black',
                     strokeWidth: 4,
-                    dash: [6, 4],
+                    // dash: [6, 4],
                 });
 
                 field.layer.add(polygon);
@@ -291,6 +291,16 @@ document.addEventListener("DOMContentLoaded", function() {
                 field.layer.draw();
             }
 
+            clearParallelogram() {
+                if (!this.parallelogram) {
+                    return;
+                }
+
+                this.parallelogram.destroy();
+                this.parallelogram = null;
+                this.layer.draw();
+                console.log("🧹 Параллелограмм удалён");
+            }
         }
 
         field = new Field(2300, 2300, "root");

@@ -10,12 +10,11 @@ from models.law import Law
 
 
 class LawDialog(QDialog):
-    def __init__(self, backend, selected_items: QVariant, parent=None):
+    def __init__(self, backend, selected_items: QVariant, law=None, parent=None):
         super().__init__(parent)
 
         print('selected_items', [it.name for it in selected_items])
 
-        self.setWindowTitle("Добавить закон")
         self.backend = backend
         self.selected_items = selected_items
 
@@ -35,6 +34,25 @@ class LawDialog(QDialog):
         layout.addWidget(QLabel("Формула (в формате KaTeX):"))
         layout.addWidget(self.formula_input)
         layout.addWidget(self.formula_view)
+
+        self.editing_law = law
+
+        # --- Группа закона ---
+        self.group_selector = QComboBox()
+        for group in backend.law_groups:  # предполагаем, что список групп законов доступен здесь
+            self.group_selector.addItem(group.name, group)
+
+        if self.editing_law:
+            self.setWindowTitle("Редактировать закон")
+
+            self.name_input.setText(law.name)
+            self.desc_input.setText(law.description)
+            self.formula_input.setText(law.formula)
+            index = self.group_selector.findText(law.group.name)
+            if index != -1:
+                self.group_selector.setCurrentIndex(index)
+        else:
+            self.setWindowTitle("Создать закон")
 
         # --- Параллелограмм: a * b = c * d ---
         a, b, c, d = selected_items  # список из 4 величин
@@ -59,19 +77,30 @@ class LawDialog(QDialog):
         eq_layout.addLayout(row3)
         self.eq_widget.setLayout(eq_layout)
 
+        group_layout = QHBoxLayout()
+        group_layout.addWidget(self.group_selector)
+
+        self.color_box = QLabel()
+        self.color_box.setFixedSize(20, 20)
+        self.color_box.setStyleSheet("border: 1px solid black; background-color: white;")
+        self.update_group_color()
+        self.group_selector.currentIndexChanged.connect(self.update_group_color)
+
+        group_layout.addWidget(self.color_box)
+
+        layout.addWidget(QLabel("Группа закона"))
+        layout.addLayout(group_layout)
+
         layout.addWidget(QLabel("Выражение:"))
         layout.addWidget(self.eq_widget)
 
-        # --- Группа закона ---
-        self.group_selector = QComboBox()
-        for group in backend.law_groups:  # предполагаем, что список групп законов доступен здесь
-            self.group_selector.addItem(group.name, group)
-        layout.addWidget(QLabel("Группа закона"))
-        layout.addWidget(self.group_selector)
-
         # --- Кнопки ---
         button_layout = QHBoxLayout()
+
         save_btn = QPushButton("✅ Добавить")
+        if self.editing_law:
+            save_btn = QPushButton("✅ Редактировать")
+
         cancel_btn = QPushButton("❌ Отмена")
         save_btn.clicked.connect(self.save)
         cancel_btn.clicked.connect(self.reject)
@@ -80,6 +109,8 @@ class LawDialog(QDialog):
 
         layout.addLayout(button_layout)
         self.setLayout(layout)
+
+        self.group_selector.currentIndexChanged.connect(self.update_group_color)
 
         # --- Обновление формулы ---
         self.formula_input.textChanged.connect(self.update_preview)
@@ -116,13 +147,27 @@ class LawDialog(QDialog):
 
     def save(self):
         group = self.group_selector.currentData()
-        law = Law(
-            name=self.name_input.text(),
-            description=self.desc_input.text(),
-            formula=self.formula_input.text(),
-            variables=[q.name for q in self.selected_items],
-            group=group
-        )
-        group.laws.append(law)
-        QMessageBox.information(self, "✅", "Закон добавлен!")
+
+        if self.editing_law:
+            self.editing_law.name = self.name_input.text()
+            self.editing_law.description = self.desc_input.text()
+            self.editing_law.formula = self.formula_input.text()
+            self.editing_law.group = group
+            QMessageBox.information(self, "✅", "Закон обновлён!")
+        else:
+            law = Law(
+                name=self.name_input.text(),
+                description=self.desc_input.text(),
+                formula=self.formula_input.text(),
+                variables=[q.name for q in self.selected_items],
+                group=group
+            )
+            group.laws.append(law)
+            QMessageBox.information(self, "✅", "Закон добавлен!")
+
         self.accept()
+
+    def update_group_color(self):
+        group = self.group_selector.currentData()
+        if group:
+            self.color_box.setStyleSheet(f"border: 1px solid black; background-color: {group.color};")
