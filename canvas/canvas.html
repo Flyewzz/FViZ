@@ -108,9 +108,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 let cellGroup = this.cells[cellKey];
 
                 if (cellGroup) {
-                    // Если сота уже существует, просто меняем её состояние
+                    // Просто обновляем свойства, НО НЕ инвертируем активность
                     const cell = cellGroup.getChildren()[0];
-                    const newActivated = !cell.attrs.activated;
+
+                    // Если явно передан activated — используем его
+                    const newActivated = activated ?? false;
 
                     cell.stroke(newActivated ? "red" : "black");
                     cell.strokeWidth(newActivated ? 6 : 2);
@@ -139,6 +141,12 @@ document.addEventListener("DOMContentLoaded", function() {
                 this.layer.add(cellGroup);
 
                 const clickHandler = () => {
+                    if (window.suppressNextClick) {
+                        window.suppressNextClick = false;
+                        console.log("🛡️ Click suppressed");
+                        return;
+                    }
+
                     this.createCell(L, T, name, symbol, value_c, group_name, color, !cell.attrs.activated);
                     if (window.pyqtObject) {
                         window.pyqtObject.onCellSelected(L, T, group_name);
@@ -301,9 +309,17 @@ document.addEventListener("DOMContentLoaded", function() {
                 this.layer.draw();
                 console.log("🧹 Параллелограмм удалён");
             }
+
+            clearAll() {
+                this.layer.destroyChildren();
+                this.cells = {};
+                this.parallelogram = null;
+                this.layer.draw();
+            }
         }
 
         field = new Field(2300, 2300, "root");
+        window.suppressNextClick = false;
 
      function ensureFieldExists(callback) {
       if (window.field) {

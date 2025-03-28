@@ -26,3 +26,20 @@ class SystemGroup:
             if (L, T) != (exclude_L, exclude_T):
                 return quantity
         return None  # Если нет других величин
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "color": self.color,
+            "G": self.G,
+            "k": self.k
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            name=data["name"],
+            color=data["color"],
+            G=data["G"],
+            k=data["k"]
+        )

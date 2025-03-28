@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QAction
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QAction, QFileDialog
 from PyQt5.QtWebChannel import QWebChannel
 from views.physical_web_view import PhysicalWebEngineView
 from backend.controller import Backend
@@ -35,6 +35,12 @@ class MainWindow(QMainWindow):
         self.webView.page().loadFinished.connect(self.initWebChannel)
 
         menu_bar = self.menuBar()
+        file_menu = menu_bar.addMenu("Файл")
+
+        load_json_action = QAction("Импортировать JSON", self)
+        load_json_action.triggered.connect(self.load_json_dialog)
+        file_menu.addAction(load_json_action)
+
         settings_menu = menu_bar.addMenu("Настройки")
         group_action = QAction("Системные группы ФВ", self)
         group_action.triggered.connect(self.open_group_dialog)
@@ -56,3 +62,10 @@ class MainWindow(QMainWindow):
 
     def sendToJS(self, message):
         self.webView.page().runJavaScript(f'alert("{message}");')
+
+    def load_json_dialog(self):
+        from services.file_service import FileService
+        path, _ = QFileDialog.getOpenFileName(self, "Загрузить JSON проект", "", "JSON (*.json)")
+        if path:
+            service = FileService(self.backend.service, self.backend.service.law_groups)
+            service.load_json_file(path, parent=self)

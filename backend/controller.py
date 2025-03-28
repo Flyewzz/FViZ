@@ -31,14 +31,14 @@ class Backend(QObject):
                 sub = QMenu("Заменить", menu)
                 for q in other:
                     action = QAction(q.name, sub)
-                    action.triggered.connect(lambda _, q=q: self.service.replace_cell(L, T, q))
+                    action.triggered.connect(lambda _, q=q: (self.service.replace_cell(L, T, q), self.suppress_next_click()))
                     sub.addAction(action)
                 menu.addMenu(sub)
 
             edit = QAction("Редактировать", menu)
             delete = QAction("Удалить", menu)
-            edit.triggered.connect(lambda: self.editCell(L, T))
-            delete.triggered.connect(lambda: self.service.delete_cell(L, T, group_name))
+            edit.triggered.connect(lambda: (self.editCell(L, T), self.suppress_next_click()))
+            delete.triggered.connect(lambda: (self.service.delete_cell(L, T, group_name), self.suppress_next_click()))
             menu.addAction(edit)
             menu.addAction(delete)
 
@@ -52,7 +52,7 @@ class Backend(QObject):
         all_groups = self.service.get_all_groups()
         if len(used_groups) != len(all_groups):
             create = QAction("Создать", menu)
-            create.triggered.connect(lambda: self.createCellDialog(L, T, used_groups))
+            create.triggered.connect(lambda: (self.createCellDialog(L, T, used_groups), self.suppress_next_click()))
             menu.addAction(create)
         menu.exec_(QPoint(x, y))
 
@@ -83,6 +83,9 @@ class Backend(QObject):
                     self.openLawDialog(selected_quantities)
             else:
                 self.clear_parallelogram()
+
+    def suppress_next_click(self):
+        self.webView.page().runJavaScript("window.suppressNextClick = true;")
 
     def openLawDialog(self, quantities, existing_law=None):
         # теперь отображаем форму в Python
@@ -124,9 +127,9 @@ class Backend(QObject):
         dialog.exec_()
 
     @pyqtSlot()
-    def sendAllCellsToWebView(self):  # <- Это важно
+    def sendAllCellsToWebView(self):
         print("📡 JS запросил отправку сот")
-        cells = self.service.get_all_cells()
+        cells = self.service.get_visible_cells()  # 🔄 заменили на visible
         script = "\n".join(
             [
                 f"field.createCell({L}, {T}, '{c.name}', '{c.symbol}', '{c.value_c}', '{c.group.name}', '{c.group.color}');"

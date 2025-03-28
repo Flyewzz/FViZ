@@ -21,12 +21,7 @@ class EditCellDialog(QDialog):
         self.cell = None
 
         if not self.create_mode:
-            for group in self.backend.system_groups:
-                cell = group.get_quantity(L, T)
-                if cell:
-                    self.cell = cell
-                    break
-
+            self.cell = self.backend.visible_cells.get((L, T))
             if not self.cell:
                 self.close()
                 return
@@ -95,7 +90,7 @@ class EditCellDialog(QDialog):
         if self.create_mode:
             from models.physical_value import PhysicalQuantity
             new_cell = PhysicalQuantity(name, symbol, unit, value_c, group, self.L, self.T)
-            self.backend.create_cell(new_cell, group)
+            self.backend.create_cell(new_cell, group, True)
         else:
             self.backend.apply_edit(self.L, self.T, name, symbol, unit, value_c, group)
 

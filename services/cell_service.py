@@ -1,4 +1,3 @@
-# services/cell_service.py
 from models.law_group import LawGroup
 from models.system_group import SystemGroup
 from models.physical_value import PhysicalQuantity
@@ -11,7 +10,7 @@ class CellService:
             SystemGroup("Группа 2", "#fa73ec", G=2, k=2),
             SystemGroup("Группа 3", "#ecfa73", G=3, k=3)
         ]
-        self.cells = {}
+        self.visible_cells = {}  # Только для отображения
         self.selected = []
 
         self.law_groups = [
@@ -20,7 +19,7 @@ class CellService:
             LawGroup("Термодинамика", "#aaaaff"),
         ]
 
-        self._fill_cells()
+        # self._fill_cells()
         self.send_all_to_webview()
 
     def _fill_cells(self):
@@ -83,33 +82,41 @@ class CellService:
                         self.update_web_cell(L, T, other_quantities[0])
                     else:
                         self.remove_web_cell(L, T)
+
+                    if (L, T) in self.visible_cells:
+                        del self.visible_cells[(L, T)]
                 break
+
 
     def replace_cell(self, L, T, quantity):
         self.update_web_cell(L, T, quantity)
 
     def apply_edit(self, L, T, name, symbol, unit, value_c, new_group):
-        if (L, T) not in self.cells:
+        current = self.visible_cells.get((L, T))
+        if not current:
             return
-        current = self.cells[L, T]
-        if current.group != new_group:
-            del self.cells[L, T]
-            current.group.remove_quantity(L, T)
-            new = PhysicalQuantity(name, symbol, unit, value_c, new_group, L, T)
-            new_group.add_quantity(new)
-            self.cells[L, T] = new
-        else:
-            current.name = name
-            current.symbol = symbol
-            current.unit = unit
-            current.value_c = value_c
-        self.update_web_cell(L, T, self.cells[L, T])
 
-    def create_cell(self, cell, group):
-        self.cells[(cell.L, cell.T)] = cell
+        # Всегда создаём новую сущность с новыми данными и группой
+        new = PhysicalQuantity(name, symbol, unit, value_c, new_group, L, T)
+
+        # Удаляем старую ячейку из её группы
+        current.group.remove_quantity(L, T)
+        # Добавляем новую в нужную группу
+        new_group.add_quantity(new)
+
+        # Обновляем отображаемую ссылку
+        self.visible_cells[(L, T)] = new
+        self.update_web_cell(L, T, new)
+
+    def create_cell(self, cell, group, visible=False):
         group.add_quantity(cell)
+        if visible:
+            current_visible = self.visible_cells.get((cell.L, cell.T))
+            if current_visible:
+                return
 
-        self.create_web_cell(cell.L, cell.T, cell)
+            self.visible_cells[(cell.L, cell.T)] = cell
+            self.create_web_cell(cell.L, cell.T, cell)
 
     def create_web_cell(self, L, T, cell):
         """Создает соту в WebView"""
@@ -127,8 +134,14 @@ class CellService:
     def get_all_groups(self):
         return self.system_groups
 
+    def get_visible_cells(self):
+        return self.visible_cells  # это должен быть dict[(L, T)] = PhysicalQuantity
+
     def get_all_cells(self):
-        return self.cells
+        all_cells = {}
+        for group in self.system_groups:
+            all_cells.update(group.cells)
+        return all_cells
 
     def get_cell_by_coords(self, L, T, group_name):
         for group in self.system_groups:
@@ -184,11 +197,19 @@ class CellService:
         print("❌ Условия не выполнены")
         return None
 
+    def add_group(self, group):
+        self.system_groups.append(group)
+
+    def clear_all(self):
+        self.system_groups.clear()
+        self.visible_cells.clear()
+        self.selected.clear()
+
     def send_all_to_webview(self):
         script = "\n".join(
             [
-                f"field.createCell({L}, {T}, '{c.name}', '{c.symbol}', '{c.value_c}', '{c.group.name}', '{c.group.color}');"
-                for (L, T), c in self.cells.items()
+                f"field.createCell({L}, {T}, '{q.name}', '{q.symbol}', '{q.value_c}', '{q.group.name}', '{q.group.color}');"
+                for (L, T), q in self.visible_cells.items()
             ]
         )
         self.webView.page().runJavaScript(f"ensureFieldExists(() => {{ {script} }});")

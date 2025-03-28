@@ -21,3 +21,27 @@ class PhysicalQuantity:
 
     def __repr__(self):
         return f"PhysicalQuantity({self.name}, {self.symbol}, {self.unit}, {self.value_c}, Group={self.group.name}, L={self.L}, T={self.T})"
+
+    def to_dict(self, visible=False):
+        return {
+            "name": self.name,
+            "symbol": self.symbol,
+            "unit": self.unit,
+            "value_c": self.value_c,
+            "L": self.L,
+            "T": self.T,
+            "group": self.group.name,
+            "visible": visible  # только для экспорта
+        }
+
+    @classmethod
+    def from_dict(cls, data, group):
+        return cls(
+            name=data["name"],
+            symbol=data["symbol"],
+            unit=data["unit"],
+            value_c=data["value_c"],
+            group=group,
+            L=data["L"],
+            T=data["T"]
+        )
