@@ -1,6 +1,8 @@
 # views/edit_cell_dialog.py
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QComboBox, QPushButton, QLineEdit, QHBoxLayout, QWidget
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QComboBox, QPushButton, QLineEdit, QHBoxLayout, QWidget, \
+    QMessageBox
 from PyQt5.QtGui import QColor, QPalette
+from services.utils import is_quantity_name_used
 
 
 class EditCellDialog(QDialog):
@@ -86,6 +88,10 @@ class EditCellDialog(QDialog):
         symbol = self.symbol_input.text()
         unit = self.unit_input.text()
         value_c = self.value_c_input.text()
+
+        if is_quantity_name_used(self.backend, name, self.cell if not self.create_mode else None):
+            QMessageBox.warning(self, "Ошибка", f"Физическая величина с именем '{name}' уже существует.")
+            return
 
         if self.create_mode:
             from models.physical_value import PhysicalQuantity

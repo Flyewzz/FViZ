@@ -213,3 +213,4 @@ class CellService:
             ]
         )
         self.webView.page().runJavaScript(f"ensureFieldExists(() => {{ {script} }});")
+        self.webView.page().runJavaScript("setTimeout(() => field.fitToContent(), 200);")

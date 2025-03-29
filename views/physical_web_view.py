@@ -17,19 +17,18 @@ class PhysicalWebEngineView(QWebEngineView):
 
         self.page().runJavaScript(f"""
             (function() {{
-                const x = {pos.x()} + window.scrollX;
-                const y = {pos.y()} + window.scrollY;
+                const scale = field.stage.scaleX();
+                const stagePos = field.stage.position();
 
-                const cell = field.computeLT(x, y);
+                const localX = ({pos.x()} - stagePos.x) / scale;
+                const localY = ({pos.y()} - stagePos.y) / scale;
+
+                const cell = field.computeLT(localX, localY);
 
                 if (window.pyqtObject && cell) {{
                     const L = parseInt(cell.L);
                     const T = parseInt(cell.T);
-
-                    const globalX = {global_pos.x()};
-                    const globalY = {global_pos.y()};
-
-                    window.pyqtObject.showContextMenu(L, T, cell.group_name, globalX, globalY);
+                    window.pyqtObject.showContextMenu(L, T, cell.group_name, {global_pos.x()}, {global_pos.y()});
                 }}
             }})();
         """)
