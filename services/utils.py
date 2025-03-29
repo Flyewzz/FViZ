@@ -1,9 +1,10 @@
 # services/utils.py
 
 def is_quantity_name_used(cell_service, name, exclude=None):
+    name = name.strip().lower()
     for group in cell_service.get_all_groups():
         for quantity in group.cells.values():
-            if quantity.name == name and quantity is not exclude:
+            if quantity.name.strip().lower() == name and quantity is not exclude:
                 return True
     return False
 

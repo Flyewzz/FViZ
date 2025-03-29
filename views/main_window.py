@@ -69,6 +69,7 @@ class MainWindow(QMainWindow):
 
         export_action = QAction(icon("export"), "Экспорт таблицы", self)
         export_action.setShortcut("Ctrl+E")
+        export_action.triggered.connect(lambda: self.webView.page().runJavaScript("exportCanvasImage();"))
 
         exit_action = QAction(icon("exit"), "Выйти", self)
         exit_action.setShortcut(QKeySequence.Quit)

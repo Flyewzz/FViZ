@@ -32,3 +32,15 @@ class PhysicalWebEngineView(QWebEngineView):
                 }}
             }})();
         """)
+
+    def export_table_as_image(self):
+        self.page().runJavaScript("""
+            html2canvas(document.body, {
+                backgroundColor: null,
+                useCORS: true,
+                scale: 2
+            }).then(canvas => {
+                const dataURL = canvas.toDataURL('image/png');
+                pyqtObject.saveCanvasImage(dataURL);
+            });
+        """)

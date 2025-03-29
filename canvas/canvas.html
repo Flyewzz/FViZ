@@ -103,36 +103,36 @@ document.addEventListener("DOMContentLoaded", function() {
 }
 
             computeLT(x, y) {
-            const hexSize = 130;
-            const spacing = 20;
+                const hexSize = 130;
+                const spacing = 20;
 
-            // Constants used in the transformation
-            const factor1 = Math.sqrt(3) * hexSize + spacing;
-            const factor2 = 3 * hexSize + Math.sqrt(3) * spacing;
+                // Constants used in the transformation
+                const factor1 = Math.sqrt(3) * hexSize + spacing;
+                const factor2 = 3 * hexSize + Math.sqrt(3) * spacing;
 
-            // Compute L - T and L + T
-            let L_minus_T = (2 * (x - centerX)) / factor1;
-            let L_plus_T = (2 * (centerY - y)) / factor2;
+                // Compute L - T and L + T
+                let L_minus_T = (2 * (x - centerX)) / factor1;
+                let L_plus_T = (2 * (centerY - y)) / factor2;
 
-            // Compute L and T
-            let L = (L_minus_T + L_plus_T) / 2;
-            let T = (L_plus_T - L_minus_T) / 2;
+                // Compute L and T
+                let L = (L_minus_T + L_plus_T) / 2;
+                let T = (L_plus_T - L_minus_T) / 2;
 
-            // Round to the nearest integer
-            L = Math.round(L);
-            T = Math.round(T);
+                // Round to the nearest integer
+                L = Math.round(L);
+                T = Math.round(T);
 
-            const key = `${L},${T}`;
-            const cellGroup = this.cells[key] || null;
+                const key = `${L},${T}`;
+                const cellGroup = this.cells[key] || null;
 
-            let group_name = null;
-            if (cellGroup != null) {
-                const cell = cellGroup.getChildren()[0];
-                group_name = cell.attrs.group_name;
+                let group_name = null;
+                if (cellGroup != null) {
+                    const cell = cellGroup.getChildren()[0];
+                    group_name = cell.attrs.group_name;
+                }
+
+                return { L, T, group_name };
             }
-
-            return { L, T, group_name };
-        }
 
             /**
              * Создаёт или изменяет существующую соту.
@@ -400,6 +400,19 @@ document.addEventListener("DOMContentLoaded", function() {
             field.stage.height(window.innerHeight);
             field.stage.batchDraw();
         });
+
+        function exportCanvasImage() {
+            const container = document.getElementById("root");
+            html2canvas(container, {
+                backgroundColor: "#ffffff", // лучшее качество и белый фон
+                scale: 2 // увеличить разрешение
+            }).then(canvas => {
+                const dataURL = canvas.toDataURL("image/png");
+                if (window.pyqtObject && window.pyqtObject.save_canvas_image) {
+                    window.pyqtObject.save_canvas_image(dataURL);
+                }
+            });
+        }
     </script>
 </body>
 </html>

@@ -1,7 +1,9 @@
 # backend/controller.py
+import base64
 
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal, QPoint, QVariant
-from PyQt5.QtWidgets import QApplication, QAction, QMenu
+from PyQt5.QtGui import QImage
+from PyQt5.QtWidgets import QApplication, QAction, QMenu, QMessageBox, QFileDialog
 from views.cell_edit_dialog import EditCellDialog
 from services.cell_service import CellService
 from views.laws_dialog import LawDialog
@@ -138,3 +140,27 @@ class Backend(QObject):
         )
         self.webView.page().runJavaScript(f"ensureFieldExists(() => {{ {script} }});")
 
+    @pyqtSlot(str)
+    def save_canvas_image(self, base64_data_url):
+        try:
+            base64_data = base64_data_url.split(',')[1]
+            image_data = base64.b64decode(base64_data)
+
+            file_path, _ = QFileDialog.getSaveFileName(
+                None,
+                "Сохранить изображение",
+                "",
+                "PNG Image (*.png);;JPEG Image (*.jpg *.jpeg)"
+            )
+            if not file_path:
+                return
+
+            image = QImage()
+            image.loadFromData(image_data)
+
+            fmt = 'PNG' if file_path.lower().endswith('.png') else 'JPEG'
+            image.save(file_path, fmt)
+
+            QMessageBox.information(None, "Экспорт", "Изображение успешно сохранено.")
+        except Exception as e:
+            QMessageBox.critical(None, "Ошибка", f"Не удалось сохранить изображение:\n{e}")
