@@ -204,6 +204,7 @@ class CellService:
         self.system_groups.clear()
         self.visible_cells.clear()
         self.selected.clear()
+        self.clear_all_on_webview()
 
     def send_all_to_webview(self):
         script = "\n".join(
@@ -214,3 +215,6 @@ class CellService:
         )
         self.webView.page().runJavaScript(f"ensureFieldExists(() => {{ {script} }});")
         self.webView.page().runJavaScript("setTimeout(() => field.fitToContent(), 200);")
+
+    def clear_all_on_webview(self):
+        self.webView.page().runJavaScript("field.clearAll();")

@@ -12,18 +12,17 @@ class FileService:
         self.cell_service = cell_service
         self.law_groups = law_groups
 
-    def save_to_file(self, parent=None):
-        path, _ = QFileDialog.getSaveFileName(parent, "Сохранить проект", "", "Physics Viz (*.fviz)")
+    def save_to_file(self, path, parent=None):
         if not path:
             return
 
         all_cells = self.cell_service.get_all_cells()
-        visible_set = {(q.L, q.T, q.group.name) for q in self.cell_service.get_visible_cells()}
+        visible_set = {(q.L, q.T, q.group.name) for q in self.cell_service.get_visible_cells().values()}
 
         data = {
             "cells": [
                 q.to_dict(visible=(q.L, q.T, q.group.name) in visible_set)
-                for (_, _, _), q in all_cells.items()
+                for q in all_cells.values()
             ],
             "system_groups": [g.to_dict() for g in self.cell_service.get_all_groups()],
             "law_groups": [g.to_dict() for g in self.law_groups]

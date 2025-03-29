@@ -5,6 +5,7 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView
 class PhysicalWebEngineView(QWebEngineView):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setAcceptDrops(False)  # 🔒 запретить drop на самом webView
 
     def javaScriptConsoleMessage(self, level, msg, line, sourceID):
         print(f"[JS console] {msg} (line {line})")
