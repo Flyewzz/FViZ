@@ -3,7 +3,7 @@ from PyQt5.QtWebChannel import QWebChannel
 from views.physical_web_view import PhysicalWebEngineView
 from backend.controller import Backend
 from PyQt5.QtGui import QIcon, QKeySequence
-# from views.law_group_settings_dialog import LawGroupSettingsDialog
+from views.law_group_settings_dialog import LawGroupSettingsDialog
 from views.system_groups_dialog import SystemGroupsDialog
 from services.file_service import FileService
 import os
@@ -139,9 +139,8 @@ class MainWindow(QMainWindow):
         dialog.exec_()
 
     def open_law_group_dialog(self):
-        pass
-        # dialog = LawGroupSettingsDialog(self.backend.service.law_groups, self)
-        # dialog.exec_()
+        dialog = LawGroupSettingsDialog(self.backend.service.law_groups, self)
+        dialog.exec_()
 
     def load_json_dialog(self):
         path, _ = QFileDialog.getOpenFileName(self, "Загрузить JSON проект", "", "JSON (*.json)")

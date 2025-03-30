@@ -89,6 +89,7 @@ class CellService:
 
 
     def replace_cell(self, L, T, quantity):
+        self.visible_cells[(L, T)] = quantity
         self.update_web_cell(L, T, quantity)
 
     def apply_edit(self, L, T, name, symbol, unit, value_c, new_group):
