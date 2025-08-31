@@ -160,6 +160,10 @@ class MainController(QObject):
     
     def _replace_and_suppress(self, L: int, T: int, quantity: PhysicalQuantity):
         """Заменить сотку и подавить следующий клик"""
+        # Очищаем выделение перед заменой
+        self.app_model.clear_selection()
+        self.parallelogram_cleared.emit()
+        
         self.app_model.set_visible_quantity(L, T, quantity)
         # Принудительно отправляем сигнал о том, что все соты нужно обновить
         self.send_all_cells_to_web_view()

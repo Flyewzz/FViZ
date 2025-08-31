@@ -32,11 +32,11 @@ class LawRepositoryImpl(ILawRepository):
         self._laws[law.id] = law
         
         # Добавляем в группу
-        group_id = law.group.id
-        if group_id not in self._laws_by_group:
+        group_id = getattr(law, 'group_id', None) or (law.group.id if hasattr(law, 'group') else None)
+        if group_id and group_id not in self._laws_by_group:
             self._laws_by_group[group_id] = []
         
-        if law not in self._laws_by_group[group_id]:
+        if group_id and law not in self._laws_by_group[group_id]:
             self._laws_by_group[group_id].append(law)
     
     def find_law_by_id(self, law_id: str) -> Optional[Law]:
@@ -65,8 +65,8 @@ class LawRepositoryImpl(ILawRepository):
             del self._laws[law_id]
             
             # Удаляем из группы
-            group_id = law.group.id
-            if group_id in self._laws_by_group and law in self._laws_by_group[group_id]:
+            group_id = getattr(law, 'group_id', None) or (law.group.id if hasattr(law, 'group') else None)
+            if group_id and group_id in self._laws_by_group and law in self._laws_by_group[group_id]:
                 self._laws_by_group[group_id].remove(law)
     
     def save_law_group(self, group: LawGroup) -> None:
@@ -103,11 +103,14 @@ class LawRepositoryImpl(ILawRepository):
     def update_law(self, law: Law) -> None:
         """Обновить закон"""
         old_law = self._laws.get(law.id)
-        if old_law and old_law.group.id != law.group.id:
-            # Переместить закон между группами
-            old_group_id = old_law.group.id
-            if old_group_id in self._laws_by_group and old_law in self._laws_by_group[old_group_id]:
-                self._laws_by_group[old_group_id].remove(old_law)
+        if old_law:
+            old_group_id = getattr(old_law, 'group_id', None) or (old_law.group.id if hasattr(old_law, 'group') else None)
+            new_group_id = getattr(law, 'group_id', None) or (law.group.id if hasattr(law, 'group') else None)
+            
+            if old_group_id and new_group_id and old_group_id != new_group_id:
+                # Переместить закон между группами
+                if old_group_id in self._laws_by_group and old_law in self._laws_by_group[old_group_id]:
+                    self._laws_by_group[old_group_id].remove(old_law)
         
         self.save_law(law)
     

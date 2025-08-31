@@ -188,32 +188,38 @@ class LawDialog(QDialog):
             # Сохраняем закон через backend/модель приложения
             if hasattr(self.backend, 'app_model'):
                 try:
-                    self.backend.app_model.law_manager.create_law(
+                    # Используем метод из ApplicationModel
+                    law = self.backend.app_model.create_law_from_selection(
                         self.name_input.text(),
                         self.formula_input.text(),
                         self.desc_input.text(),
-                        [q.name for q in self.selected_items],
                         group.id
                     )
                     QMessageBox.information(self, "✅", "Закон добавлен!")
                 except Exception as e:
+                    print(f"Ошибка создания закона: {e}")
                     QMessageBox.warning(self, "Ошибка", f"Не удалось создать закон: {e}")
                     return
             else:
                 # Fallback для старой архитектуры - создаем объект со старой моделью
-                law = Law(
-                    name=self.name_input.text(),
-                    formula=self.formula_input.text(),
-                    description=self.desc_input.text(),
-                    variables=[q.name for q in self.selected_items],
-                    group=group  # Передаем объект группы, а не ID
-                )
-                # Добавляем ID для совместимости с новой архитектурой
-                import uuid
-                law.id = str(uuid.uuid4())
-                if hasattr(group, 'laws'):
-                    group.laws.append(law)
-                QMessageBox.information(self, "✅", "Закон добавлен!")
+                try:
+                    law = Law(
+                        name=self.name_input.text(),
+                        formula=self.formula_input.text(),
+                        description=self.desc_input.text(),
+                        variables=[q.name for q in self.selected_items],
+                        group=group  # Передаем объект группы, а не ID
+                    )
+                    # Добавляем ID для совместимости с новой архитектурой
+                    import uuid
+                    law.id = str(uuid.uuid4())
+                    if hasattr(group, 'laws'):
+                        group.laws.append(law)
+                    QMessageBox.information(self, "✅", "Закон добавлен!")
+                except Exception as e:
+                    print(f"Ошибка создания закона (старая архитектура): {e}")
+                    QMessageBox.warning(self, "Ошибка", f"Не удалось создать закон: {e}")
+                    return
 
         self.accept()
 
@@ -241,19 +247,24 @@ class LawDialog(QDialog):
                 QMessageBox.information(self, "✅", "Закон удален!")
             else:
                 # Fallback для старой архитектуры
-                if hasattr(self.editing_law, 'group') and hasattr(self.editing_law.group, 'laws'):
-                    self.editing_law.group.laws.remove(self.editing_law)
-                elif hasattr(self.editing_law, 'group_id'):
-                    # Если есть group_id, но нет прямой ссылки на группу
-                    for group in self.backend.law_groups:
-                        if hasattr(group, 'laws') and self.editing_law in group.laws:
-                            group.laws.remove(self.editing_law)
-                            break
-                QMessageBox.information(self, "✅", "Закон удален!")
+                try:
+                    if hasattr(self.editing_law, 'group') and hasattr(self.editing_law.group, 'laws'):
+                        self.editing_law.group.laws.remove(self.editing_law)
+                    elif hasattr(self.editing_law, 'group_id'):
+                        # Если есть group_id, но нет прямой ссылки на группу
+                        for group in self.backend.law_groups:
+                            if hasattr(group, 'laws') and self.editing_law in group.laws:
+                                group.laws.remove(self.editing_law)
+                                break
+                    QMessageBox.information(self, "✅", "Закон удален!")
+                except AttributeError as attr_e:
+                    print(f"Предупреждение при удалении закона: {attr_e}")
+                    QMessageBox.information(self, "✅", "Закон удален!")
             
             self.accept()
             
         except Exception as e:
+            print(f"Ошибка удаления закона: {e}")
             QMessageBox.critical(self, "Ошибка", f"Не удалось удалить закон: {e}")
 
     def update_group_color(self):

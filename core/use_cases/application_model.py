@@ -198,4 +198,7 @@ class ApplicationModel:
     def clear_all_data(self) -> None:
         """Очистить все данные приложения"""
         self.quantity_manager.clear_all()
+        self.system_group_manager.system_group_repo.clear_all()
+        self.law_manager.law_repo.clear_all()
+        self.law_group_manager.law_group_repo.clear_all()
         self._selected_quantities.clear()

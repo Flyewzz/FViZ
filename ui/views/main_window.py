@@ -364,6 +364,9 @@ class MainWindow(QMainWindow):
             temp_service = TempService(self.app_model)
             file_service = FileService(temp_service, temp_service.law_groups)
             file_service.load_json_file(path, parent=self)
+            
+            # Обновляем отображение после загрузки
+            self.presenter.handle_all_cells_request()
     
     def save_json_dialog(self):
         """Сохранить JSON проект"""
@@ -463,4 +466,7 @@ class MainWindow(QMainWindow):
                 temp_service = TempService(self.app_model)
                 file_service = FileService(temp_service, temp_service.law_groups)
                 file_service.load_json_file(path, parent=self)
+                
+                # Обновляем отображение после загрузки
+                self.presenter.handle_all_cells_request()
                 return
