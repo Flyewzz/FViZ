@@ -6,14 +6,8 @@ def is_quantity_name_used(cell_service, name, exclude=None):
     
     # Если это презентер, используем его методы
     if hasattr(cell_service, 'app_model'):
-        # Получаем все величины через модель приложения
-        all_quantities_dict = cell_service.app_model.get_all_quantities()
-        for (L, T), quantities in all_quantities_dict.items():
-            for quantity in quantities:
-                if quantity.name.strip().lower() == name:
-                    if exclude is None or quantity.id != getattr(exclude, 'id', None):
-                        return True
-        return False
+        # Используем метод валидации из модели приложения
+        return not cell_service.app_model.validate_quantity_name(name, exclude)
     
     # Старая логика для совместимости
     if hasattr(cell_service, 'get_all_groups'):

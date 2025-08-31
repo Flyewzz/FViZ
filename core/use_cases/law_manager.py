@@ -121,6 +121,18 @@ class LawGroupManager:
     def get_all_groups(self) -> List[LawGroup]:
         """Получить все группы законов"""
         return self.law_group_repo.get_all()
+    
+    def get_group_by_id(self, group_id: str) -> Optional[LawGroup]:
+        """Получить группу законов по ID"""
+        return self.law_group_repo.get_by_id(group_id)
+    
+    def delete_group(self, group_id: str) -> None:
+        """Удалить группу законов"""
+        group = self.law_group_repo.get_by_id(group_id)
+        if not group:
+            raise ValueError(f"Группа законов с ID '{group_id}' не найдена")
+        
+        self.law_group_repo.remove(group_id)
 
 
 class ParallelogramLogic:
@@ -128,15 +140,85 @@ class ParallelogramLogic:
     
     def __init__(self, quantity_repo: IPhysicalQuantityRepository):
         self.quantity_repo = quantity_repo
+        self.system_group_repo = None  # Будет установлен через ApplicationFactory
     
     def check_parallelogram(self, quantities: List[PhysicalQuantity]) -> Optional[List[PhysicalQuantity]]:
         """Проверить, образуют ли выбранные величины параллелограмм"""
         
-        if len(quantities) == 3:
-            return self._check_linear_parallelogram(quantities)
-        elif len(quantities) == 4:
-            return self._check_full_parallelogram(quantities)
-        else:
+        try:
+            if len(quantities) not in (3, 4):
+                print("❌ Недостаточно выделенных элементов")
+                return None
+            
+            items = quantities.copy()
+            
+            # 1. Сортировка по L убыванию, затем T убыванию — для e1
+            items.sort(key=lambda q: (-q.L, -q.T))
+            e1 = items[0]
+            
+            # 2. Остальные сортируем по L и T по возрастанию
+            rest = items[1:]
+            rest.sort(key=lambda q: (q.L, q.T))
+            
+            if len(rest) < 2:
+                print("❌ Недостаточно оставшихся для параллелограмма")
+                return None
+            
+            e2, e3 = rest[0], rest[1]
+            e4 = rest[2] if len(items) == 4 else e3  # как в оригинале
+            
+            def log_and_check(attr_name, fn):
+                try:
+                    a = fn(e1) + fn(e2)
+                    b = fn(e3) + fn(e4)
+                    result = a == b
+                    print(f"⚖️ Проверка {attr_name}: {fn(e1)}+{fn(e2)} == {fn(e3)}+{fn(e4)} -> {'✅' if result else '❌'}")
+                    return result
+                except Exception as e:
+                    print(f"❌ Ошибка при проверке {attr_name}: {e}")
+                    return False
+            
+            # Получаем G и k из групп через репозиторий
+            def get_G(q):
+                try:
+                    if self.system_group_repo:
+                        group = self.system_group_repo.get_by_id(q.group_id)
+                        G_value = group.G if group else 0
+                        print(f"🔍 Величина {q.name} (group_id={q.group_id}): G={G_value}")
+                        return G_value
+                    print(f"❌ Нет репозитория для получения G для {q.name}")
+                    return 0
+                except Exception as e:
+                    print(f"❌ Ошибка получения G для {q.name}: {e}")
+                    return 0
+            
+            def get_k(q):
+                try:
+                    if self.system_group_repo:
+                        group = self.system_group_repo.get_by_id(q.group_id)
+                        k_value = group.k if group else 0
+                        print(f"🔍 Величина {q.name} (group_id={q.group_id}): k={k_value}")
+                        return k_value
+                    print(f"❌ Нет репозитория для получения k для {q.name}")
+                    return 0
+                except Exception as e:
+                    print(f"❌ Ошибка получения k для {q.name}: {e}")
+                    return 0
+            
+            if all([
+                log_and_check("G", get_G),
+                log_and_check("k", get_k),
+                log_and_check("L", lambda q: q.L),
+                log_and_check("T", lambda q: q.T),
+            ]):
+                print("✅ Параллелограмм найден — передаём [e1, e3, e2, e4]")
+                return [e1, e3, e2, e4]
+            
+            print("❌ Условия не выполнены")
+            return None
+            
+        except Exception as e:
+            print(f"❌ Критическая ошибка в check_parallelogram: {e}")
             return None
     
     def _check_linear_parallelogram(self, quantities: List[PhysicalQuantity]) -> Optional[List[PhysicalQuantity]]:

@@ -20,12 +20,15 @@ class LawGroupSettingsDialog(QDialog):
         self.btn_layout = QHBoxLayout()
         self.add_btn = QPushButton("➕ Добавить группу")
         self.edit_btn = QPushButton("✏️ Редактировать выбранную")
+        self.delete_btn = QPushButton("🗑️ Удалить выбранную")
         self.btn_layout.addWidget(self.add_btn)
         self.btn_layout.addWidget(self.edit_btn)
+        self.btn_layout.addWidget(self.delete_btn)
         self.layout.addLayout(self.btn_layout)
 
         self.add_btn.clicked.connect(self.add_group)
         self.edit_btn.clicked.connect(self.edit_group)
+        self.delete_btn.clicked.connect(self.delete_group)
 
         self.load_groups()
 
@@ -133,12 +136,23 @@ class LawGroupSettingsDialog(QDialog):
                 return
 
             if group:
+                # Обновляем существующую группу
                 group.name = name
                 group.color = color.name()
+                # Сохраняем в модель данных если доступна
+                if hasattr(self, 'app_model') and self.app_model:
+                    self.app_model.update_law_group(group.id, name, color.name())
                 self.load_groups()
             else:
+                # Создаем новую группу
+                from models.law_group import LawGroup
+                import uuid
                 new_group = LawGroup(name, color.name())
+                new_group.id = str(uuid.uuid4())  # Добавляем ID отдельно
                 self.groups.append(new_group)
+                # Сохраняем в модель данных если доступна
+                if hasattr(self, 'app_model') and self.app_model:
+                    self.app_model.create_law_group(new_group.id, name, color.name())
                 self.load_groups()
 
             dialog.accept()
@@ -146,3 +160,39 @@ class LawGroupSettingsDialog(QDialog):
         btn_save.clicked.connect(save)
         btn_cancel.clicked.connect(dialog.reject)
         dialog.exec_()
+
+    def delete_group(self):
+        """Удалить выбранную группу законов"""
+        item = self.list.currentItem()
+        if not item:
+            QMessageBox.warning(self, "Ошибка", "Сначала выберите группу для удаления.")
+            return
+
+        group = item.data(Qt.UserRole)
+        
+        # Подтверждение удаления
+        reply = QMessageBox.question(
+            self, "Подтверждение удаления",
+            f"Вы уверены, что хотите удалить группу законов '{group.name}'?\n\n"
+            "Это действие также удалит все законы, принадлежащие этой группе.",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply != QMessageBox.Yes:
+            return
+        
+        try:
+            # Удаляем через модель приложения если доступна
+            if hasattr(self, 'app_model') and self.app_model:
+                self.app_model.delete_law_group(group.id)
+                self.groups = self.app_model.get_all_law_groups()
+            else:
+                # Fallback для старой архитектуры
+                self.groups.remove(group)
+            
+            self.load_groups()
+            QMessageBox.information(self, "Успех", f"Группа законов '{group.name}' успешно удалена.")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось удалить группу: {e}")

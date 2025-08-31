@@ -186,6 +186,17 @@ class MainWindow(QMainWindow):
         self.webView.page().runJavaScript("""
             new QWebChannel(qt.webChannelTransport, function(channel) {
                 window.pyqtObject = channel.objects.backend;
+                window.jsBridge = channel.objects.js_bridge;
+                console.log("✅ QWebChannel успешно создан в MainWindow");
+                
+                // Отправляем все ячейки на веб-страницу после инициализации
+                setTimeout(function() {
+                    if (window.jsBridge && window.jsBridge.send_all_cells_to_web_view) {
+                        window.jsBridge.send_all_cells_to_web_view();
+                    } else {
+                        console.error("❌ Метод send_all_cells_to_web_view не найден в jsBridge");
+                    }
+                }, 500); // Небольшая задержка для гарантии полной инициализации
             });
         """)
     
@@ -195,11 +206,26 @@ class MainWindow(QMainWindow):
     
     def send_cells_to_webview(self, cells):
         """Отправка сот в WebView"""
-        script = "\n".join([
-            f"field.createCell({L}, {T}, '{cell.name}', '{cell.symbol}', '{cell.unit}', '{self._get_group_name(cell.group_id)}', '{self._get_group_color(cell.group_id)}');"
-            for (L, T), cell in cells.items()
-        ])
-        self.webView.page().runJavaScript(f"ensureFieldExists(() => {{ {script} }});")
+        print(f"📡 Отправляем {len(cells)} сот в WebView")
+        
+        # Сначала очищаем все соты
+        self.webView.page().runJavaScript("ensureFieldExists(() => { field.clearAll(); });")
+        
+        # Затем создаем новые
+        for (L, T), cell in cells.items():
+            group_name = self._get_group_name(cell.group_id)
+            group_color = self._get_group_color(cell.group_id)
+            
+            # Экранируем кавычки в названиях
+            safe_name = cell.name.replace("'", "\\'").replace('"', '\\"')
+            safe_symbol = cell.symbol.replace("'", "\\'").replace('"', '\\"')
+            safe_dimension = cell.dimension.replace("'", "\\'").replace('"', '\\"')  # Используем dimension вместо unit
+            safe_group_name = group_name.replace("'", "\\'").replace('"', '\\"')
+            
+            script = f"field.createCell({L}, {T}, '{safe_name}', '{safe_symbol}', '{safe_dimension}', '{safe_group_name}', '{group_color}');"
+            self.webView.page().runJavaScript(f"ensureFieldExists(() => {{ {script} }});")
+            
+            print(f"✅ Создана сота: {safe_name} в ({L}, {T})")
     
     def _get_group_name(self, group_id: str) -> str:
         """Получить название группы по ID"""
@@ -227,6 +253,9 @@ class MainWindow(QMainWindow):
             }
         }
         self.js_bridge.create_cell(cell_data)
+        
+        # Принудительно обновляем все соты для гарантии корректного отображения
+        self.presenter.handle_all_cells_request()
     
     def on_cell_updated_by_presenter(self, L, T, quantity):
         """Обработка обновления соты презентером"""
@@ -244,10 +273,16 @@ class MainWindow(QMainWindow):
             }
         }
         self.js_bridge.update_cell(cell_data)
+        
+        # Принудительно обновляем все соты для гарантии корректного отображения
+        self.presenter.handle_all_cells_request()
     
     def on_cell_removed(self, L, T):
         """Обработка удаления соты"""
-        self.webView.page().runJavaScript(f"field.removeCell({L}, {T});")
+        self.js_bridge.remove_cell(L, T)
+        
+        # Принудительно обновляем все соты для гарантии корректного отображения
+        self.presenter.handle_all_cells_request()
     
     def draw_parallelogram(self, quantities, color=""):
         """Отрисовка параллелограмма"""
@@ -264,31 +299,50 @@ class MainWindow(QMainWindow):
         """Очистка параллелограмма"""
         self.webView.page().runJavaScript("field.clearParallelogram();")
     
+    def _block_field_operations(self, blocked: bool):
+        """Блокировка/разблокировка операций с полем"""
+        if blocked:
+            self.webView.page().runJavaScript("window.fieldOperationsBlocked = true;")
+        else:
+            self.webView.page().runJavaScript("window.fieldOperationsBlocked = false;")
+    
     # === Обработчики меню ===
     
     def open_group_dialog(self):
         """Открыть диалог системных групп"""
-        # Создаем временный сервис для совместимости
-        class TempService:
-            def __init__(self, app_model):
-                self.app_model = app_model
-                self.system_groups = app_model.get_all_system_groups()
+        # Блокируем операции с полем
+        self._block_field_operations(True)
         
-        temp_service = TempService(self.app_model)
-        dialog = SystemGroupsDialog(temp_service.system_groups, self)
-        dialog.exec_()
+        # Получаем группы напрямую из модели приложения
+        groups = self.app_model.get_all_system_groups()
+        dialog = SystemGroupsDialog(groups, self)
+        # Передаем ссылку на модель приложения для сохранения изменений
+        dialog.app_model = self.app_model
+        
+        try:
+            result = dialog.exec_()
+            # После закрытия диалога обновляем отображение сот
+            if result == dialog.Accepted:
+                self.presenter.handle_all_cells_request()
+        finally:
+            # Разблокируем операции с полем
+            self._block_field_operations(False)
     
     def open_law_group_dialog(self):
         """Открыть диалог групп законов"""
-        # Создаем временный сервис для совместимости
-        class TempService:
-            def __init__(self, app_model):
-                self.app_model = app_model
-                self.law_groups = app_model.get_all_law_groups()
+        # Блокируем операции с полем
+        self._block_field_operations(True)
         
-        temp_service = TempService(self.app_model)
-        dialog = LawGroupSettingsDialog(temp_service.law_groups, self)
-        dialog.exec_()
+        try:
+            # Получаем группы законов напрямую из модели приложения
+            law_groups = self.app_model.get_all_law_groups()
+            dialog = LawGroupSettingsDialog(law_groups, self)
+            # Передаем ссылку на модель приложения для сохранения изменений
+            dialog.app_model = self.app_model
+            dialog.exec_()
+        finally:
+            # Разблокируем операции с полем
+            self._block_field_operations(False)
     
     def load_json_dialog(self):
         """Загрузить JSON проект"""

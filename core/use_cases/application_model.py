@@ -85,6 +85,25 @@ class ApplicationModel:
         """Получить системную группу по ID"""
         return self.system_group_manager.get_group_by_id(group_id)
     
+    def update_group_properties(self, group_id: str, properties: Dict) -> SystemGroup:
+        """Обновить свойства группы"""
+        group = self.get_system_group_by_id(group_id)
+        if not group:
+            raise ValueError(f"Группа с ID {group_id} не найдена")
+        
+        # Обновляем свойства
+        if 'name' in properties:
+            group.name = properties['name']
+        if 'color' in properties:
+            group.color = properties['color']
+        if 'G' in properties:
+            group.G = properties['G']
+        if 'k' in properties:
+            group.k = properties['k']
+        
+        # Сохраняем изменения
+        return self.system_group_manager.update_group(group_id, group.name, group.color, group.G, group.k)
+    
     # === Операции с выделением и параллелограммами ===
     
     def toggle_quantity_selection(self, quantity: PhysicalQuantity) -> None:
@@ -131,6 +150,22 @@ class ApplicationModel:
     def get_all_law_groups(self) -> List['LawGroup']:
         """Получить все группы законов"""
         return self.law_group_manager.get_all_groups()
+    
+    def get_law_group_by_id(self, group_id: str) -> 'LawGroup':
+        """Получить группу законов по ID"""
+        return self.law_group_manager.get_group_by_id(group_id)
+    
+    def create_law_group(self, id: str, name: str, color: str) -> 'LawGroup':
+        """Создать группу законов"""
+        return self.law_group_manager.create_group(id, name, color)
+    
+    def update_law_group(self, group_id: str, name: str, color: str) -> 'LawGroup':
+        """Обновить группу законов"""
+        return self.law_group_manager.update_group(group_id, name, color)
+    
+    def delete_law_group(self, group_id: str) -> None:
+        """Удалить группу законов"""
+        self.law_group_manager.delete_group(group_id)
     
     # === Валидация ===
     

@@ -20,12 +20,15 @@ class SystemGroupsDialog(QDialog):
         self.btn_layout = QHBoxLayout()
         self.add_btn = QPushButton("➕ Добавить группу")
         self.edit_btn = QPushButton("✏️ Редактировать выбранную")
+        self.delete_btn = QPushButton("🗑️ Удалить выбранную")
         self.btn_layout.addWidget(self.add_btn)
         self.btn_layout.addWidget(self.edit_btn)
+        self.btn_layout.addWidget(self.delete_btn)
         self.layout.addLayout(self.btn_layout)
 
         self.add_btn.clicked.connect(self.add_group)
         self.edit_btn.clicked.connect(self.edit_group)
+        self.delete_btn.clicked.connect(self.delete_group)
 
         self.load_groups()
 
@@ -171,6 +174,109 @@ class SystemGroupsDialog(QDialog):
 
             dialog.accept()
 
-        btn_save.clicked.connect(save)
+        def save_and_update_backend():
+            name = name_input.text().strip()
+            if not name:
+                return
+
+            try:
+                G = int(G_input.text())
+                k = int(k_input.text())
+            except Exception:
+                QMessageBox.warning(dialog, "Ошибка", "G и k должны быть целыми числами")
+                return
+
+            if is_group_name_used(self.groups, name, exclude=group):
+                QMessageBox.warning(dialog, "Ошибка", f"Системная группа с именем '{name}' уже существует.")
+                return
+
+            try:
+                if group:
+                    # Обновляем существующую группу
+                    if hasattr(self.parent(), 'app_model'):
+                        # Обновляем через модель приложения
+                        self.parent().app_model.update_group_properties(
+                            group.id, {'name': name, 'color': color.name(), 'G': G, 'k': k}
+                        )
+                    group.name = name
+                    group.color = color.name()
+                    group.G = G
+                    group.k = k
+                    self.groups = self.parent().app_model.get_all_system_groups() if hasattr(self.parent(), 'app_model') else self.groups
+                else:
+                    # Создаем новую группу через модель приложения
+                    if hasattr(self.parent(), 'app_model'):
+                        new_id = f"group_{len(self.groups) + 1}"
+                        self.parent().app_model.create_system_group(new_id, name, color.name(), G, k)
+                        self.groups = self.parent().app_model.get_all_system_groups()
+                    else:
+                        new_group = SystemGroup(name, color.name(), G, k)
+                        self.groups.append(new_group)
+            except ValueError as e:
+                QMessageBox.warning(dialog, "Ошибка", str(e))
+                return
+
+            self.load_groups()
+            dialog.accept()
+
+        # Заменяем save на save_and_update_backend
+        btn_save.clicked.connect(save_and_update_backend)
         btn_cancel.clicked.connect(dialog.reject)
         dialog.exec_()
+
+    def delete_group(self):
+        """Удалить выбранную группу"""
+        item = self.list.currentItem()
+        if not item:
+            QMessageBox.warning(self, "Ошибка", "Сначала выберите группу для удаления.")
+            return
+
+        group = item.data(Qt.UserRole)
+        
+        # Подтверждение удаления
+        reply = QMessageBox.question(
+            self, "Подтверждение удаления",
+            f"Вы уверены, что хотите удалить группу '{group.name}'?\n\n"
+            "Это действие также удалит все физические величины, принадлежащие этой группе.",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply != QMessageBox.Yes:
+            return
+        
+        try:
+            # Удаляем через модель приложения если доступна
+            if hasattr(self.parent(), 'app_model'):
+                # Сначала удаляем все физические величины этой группы
+                all_quantities = self.parent().app_model.get_all_quantities()
+                quantities_to_delete = []
+                
+                for (L, T), quantities_list in all_quantities.items():
+                    for quantity in quantities_list:
+                        if quantity.group_id == group.id:
+                            quantities_to_delete.append((L, T, group.id))
+                
+                # Удаляем физические величины
+                for L, T, group_id in quantities_to_delete:
+                    try:
+                        self.parent().app_model.delete_physical_quantity(L, T, group_id)
+                    except Exception as e:
+                        print(f"Ошибка удаления физической величины: {e}")
+                
+                # Удаляем саму группу
+                self.parent().app_model.system_group_manager.delete_group(group.id)
+                self.groups = self.parent().app_model.get_all_system_groups()
+            else:
+                # Fallback для старой архитектуры
+                self.groups.remove(group)
+            
+            self.load_groups()
+            QMessageBox.information(self, "Успех", f"Группа '{group.name}' успешно удалена.")
+            
+            # Обновляем отображение на поле
+            if hasattr(self.parent(), 'presenter') and self.parent().presenter:
+                self.parent().presenter.handle_all_cells_request()
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось удалить группу: {e}")

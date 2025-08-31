@@ -102,12 +102,15 @@ class MainController(QObject):
                 # Получаем цвет группы законов
                 law_group = self.app_model.get_law_group_by_id(existing_law.group_id)
                 color = law_group.color if law_group else "#ff0000"
+                print(f"🎨 Найден существующий закон '{existing_law.name}', цвет группы: {color}")
                 self.parallelogram_drawn.emit(parallelogram, color)
                 self._open_law_dialog(parallelogram, existing_law)
             else:
-                self.parallelogram_drawn.emit(parallelogram, "")
+                print("🔴 Новый параллелограмм, цвет по умолчанию: красный")
+                self.parallelogram_drawn.emit(parallelogram, "#ff0000")
                 self._open_law_dialog(parallelogram, None)
         else:
+            print("🧹 Параллелограмм не найден, очищаем")
             self.parallelogram_cleared.emit()
     
     @pyqtSlot(int, int, str)
@@ -158,24 +161,28 @@ class MainController(QObject):
     def _replace_and_suppress(self, L: int, T: int, quantity: PhysicalQuantity):
         """Заменить сотку и подавить следующий клик"""
         self.app_model.set_visible_quantity(L, T, quantity)
+        # Принудительно отправляем сигнал о том, что все соты нужно обновить
+        self.send_all_cells_to_web_view()
         self._suppress_next_click()
     
     def _edit_and_suppress(self, L: int, T: int):
         """Редактировать сотку и подавить следующий клик"""
-        # Сигнал будет обработан в MainWindow
         from ui.presenters.cell_edit_presenter import CellEditPresenter
         app = QApplication.instance()
         main_window = app.activeWindow()
         
-        # Используем существующий презентер из главного окна
-        if hasattr(main_window, 'presenter'):
+        # Блокируем операции с полем
+        if hasattr(main_window, '_block_field_operations'):
+            main_window._block_field_operations(True)
+        
+        try:
             presenter = CellEditPresenter(self.app_model, L, T, parent=main_window)
-            # Передаем ссылку на существующий презентер
-            presenter.main_presenter = main_window.presenter
-        else:
-            presenter = CellEditPresenter(self.app_model, L, T, parent=main_window)
+            presenter.show()
+        finally:
+            # Разблокируем операции с полем
+            if hasattr(main_window, '_block_field_operations'):
+                main_window._block_field_operations(False)
             
-        presenter.show()
         self._suppress_next_click()
     
     def _delete_and_suppress(self, L: int, T: int, group_name: str):
@@ -191,9 +198,15 @@ class MainController(QObject):
         if group_id:
             try:
                 self.app_model.delete_physical_quantity(L, T, group_id)
+                print(f"✅ Удалена сота в позиции ({L}, {T}) из группы {group_name}")
+                
+                # Принудительно отправляем сигнал о том, что все соты нужно обновить
+                self.send_all_cells_to_web_view()
             except ValueError as e:
                 print(f"Ошибка удаления: {e}")
                 # Не прерываем выполнение, просто логируем ошибку
+        else:
+            print(f"❌ Группа {group_name} не найдена")
         
         self._suppress_next_click()
     
@@ -201,13 +214,25 @@ class MainController(QObject):
         """Создать сотку и подавить следующий клик"""
         from ui.presenters.cell_edit_presenter import CellEditPresenter
         app = QApplication.instance()
-        presenter = CellEditPresenter(
-            self.app_model, L, T, 
-            create_mode=True, 
-            exclude_groups=used_groups,
-            parent=app.activeWindow()
-        )
-        presenter.show()
+        main_window = app.activeWindow()
+        
+        # Блокируем операции с полем
+        if hasattr(main_window, '_block_field_operations'):
+            main_window._block_field_operations(True)
+        
+        try:
+            presenter = CellEditPresenter(
+                self.app_model, L, T, 
+                create_mode=True, 
+                exclude_groups=used_groups,
+                parent=main_window
+            )
+            presenter.show()
+        finally:
+            # Разблокируем операции с полем
+            if hasattr(main_window, '_block_field_operations'):
+                main_window._block_field_operations(False)
+            
         self._suppress_next_click()
     
     def _get_used_groups_at_position(self, L: int, T: int) -> List[str]:
@@ -232,11 +257,22 @@ class MainController(QObject):
         """Открыть диалог закона"""
         from ui.presenters.law_dialog_presenter import LawDialogPresenter
         app = QApplication.instance()
-        presenter = LawDialogPresenter(
-            self.app_model, quantities, existing_law, 
-            parent=app.activeWindow()
-        )
-        presenter.show()
+        main_window = app.activeWindow()
+        
+        # Блокируем операции с полем
+        if hasattr(main_window, '_block_field_operations'):
+            main_window._block_field_operations(True)
+        
+        try:
+            presenter = LawDialogPresenter(
+                self.app_model, quantities, existing_law, 
+                parent=main_window
+            )
+            presenter.show()
+        finally:
+            # Разблокируем операции с полем
+            if hasattr(main_window, '_block_field_operations'):
+                main_window._block_field_operations(False)
     
     def _suppress_next_click(self):
         """Подавить следующий клик в WebView"""

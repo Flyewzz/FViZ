@@ -39,7 +39,23 @@ class CellEditPresenter:
             create_mode=self.create_mode,
             exclude_groups=self.exclude_groups
         )
-        dialog.exec_()
+        
+        # Выполняем диалог и обновляем поле после закрытия
+        result = dialog.exec_()
+        
+        # Если диалог был принят (пользователь нажал "Сохранить"), обновляем поле
+        if result == dialog.Accepted:
+            self._update_field_after_dialog()
+    
+    def _update_field_after_dialog(self):
+        """Обновить поле после закрытия диалога"""
+        from PyQt5.QtWidgets import QApplication
+        app = QApplication.instance()
+        main_window = app.activeWindow()
+        
+        if hasattr(main_window, 'controller'):
+            main_window.controller.send_all_cells_to_web_view()
+            print(f"🔄 Поле обновлено после {'создания' if self.create_mode else 'редактирования'} соты")
     
     def get_current_quantity(self) -> Optional[PhysicalQuantity]:
         """Получить текущую физическую величину"""
@@ -74,16 +90,13 @@ class CellEditPresenter:
                 
                 print(f"✅ Создана новая сота: {name} в позиции ({self.L}, {self.T})")
                 
-                # Отправляем сигнал об обновлении UI через существующий презентер
+                # Принудительно обновляем все соты через контроллер
                 from PyQt5.QtWidgets import QApplication
                 app = QApplication.instance()
                 main_window = app.activeWindow()
                 
-                # Используем презентер из главного окна
-                if hasattr(main_window, 'presenter'):
-                    main_window.presenter.cell_created.emit(self.L, self.T, quantity)
-                    # Принудительно обновляем все соты
-                    main_window.presenter.handle_all_cells_request()
+                if hasattr(main_window, 'controller'):
+                    main_window.controller.send_all_cells_to_web_view()
                 
             else:
                 # Обновляем существующую
@@ -99,13 +112,13 @@ class CellEditPresenter:
                 
                 print(f"✅ Обновлена сота: {name} в позиции ({self.L}, {self.T})")
                 
-                # Отправляем сигнал об обновлении UI через главный презентер
+                # Принудительно обновляем все соты через контроллер
                 from PyQt5.QtWidgets import QApplication
                 app = QApplication.instance()
                 main_window = app.activeWindow()
                 
-                if hasattr(main_window, 'presenter'):
-                    main_window.presenter.cell_updated.emit(self.L, self.T, updated_quantity)
+                if hasattr(main_window, 'controller'):
+                    main_window.controller.send_all_cells_to_web_view()
             
             return True
             

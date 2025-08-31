@@ -1,4 +1,3 @@
-# backend/bridge.py
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
 
 
@@ -8,6 +7,7 @@ class JSBridge(QObject):
     # Сигналы для общения с JavaScript
     sendAllCellsToWebView = pyqtSignal()
     showContextMenu = pyqtSignal(int, int, str, int, int)
+    save_canvas_image_signal = pyqtSignal(str)
     
     def __init__(self, webView):
         super().__init__()
@@ -29,13 +29,29 @@ class JSBridge(QObject):
         # Этот метод будет обработан в MainController
         pass
     
-    # Сигнал для сохранения изображения
-    save_canvas_image_signal = pyqtSignal(str)
+    def create_cell(self, cell_data):
+        """Создать ячейку через JavaScript"""
+        try:
+            js = f"field.createCell({cell_data['L']}, {cell_data['T']}, '{cell_data['name']}', '{cell_data['symbol']}', '{cell_data['value_c']}', '{cell_data['group']['name']}', '{cell_data['group']['color']}');"
+            self.webView.page().runJavaScript(js)
+            print(f"✅ Создана сота через JSBridge: {cell_data['name']} в ({cell_data['L']}, {cell_data['T']})")
+        except Exception as e:
+            print(f"❌ Ошибка создания соты через JSBridge: {e}")
 
-    def create_cell(self, cell):
-        js = f"field.createCell({cell.L}, {cell.T}, '{cell.name}', '{cell.symbol}', '{cell.value_c}', '{cell.group.name}', '{cell.group.color}');"
-        self.webView.page().runJavaScript(js)
+    def update_cell(self, cell_data):
+        """Обновить ячейку через JavaScript"""
+        try:
+            js = f"field.updateCell({cell_data['L']}, {cell_data['T']}, '{cell_data['name']}', '{cell_data['symbol']}', '{cell_data['value_c']}', '{cell_data['group']['name']}', '{cell_data['group']['color']}');"
+            self.webView.page().runJavaScript(js)
+            print(f"✅ Обновлена сота через JSBridge: {cell_data['name']} в ({cell_data['L']}, {cell_data['T']})")
+        except Exception as e:
+            print(f"❌ Ошибка обновления соты через JSBridge: {e}")
 
-    def update_cell(self, cell):
-        js = f"field.updateCell({cell.L}, {cell.T}, '{cell.name}', '{cell.symbol}', '{cell.value_c}', '{cell.group.name}', '{cell.group.color}');"
-        self.webView.page().runJavaScript(js)
+    def remove_cell(self, L: int, T: int):
+        """Удалить ячейку через JavaScript"""
+        try:
+            js = f"field.removeCell({L}, {T});"
+            self.webView.page().runJavaScript(js)
+            print(f"✅ Удалена сота через JSBridge: ({L}, {T})")
+        except Exception as e:
+            print(f"❌ Ошибка удаления соты через JSBridge: {e}")

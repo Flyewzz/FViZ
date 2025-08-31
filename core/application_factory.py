@@ -32,6 +32,9 @@ class ApplicationFactory:
         law_group_manager = LawGroupManager(law_repository)
         parallelogram_logic = ParallelogramLogic(pq_repository)
         
+        # Устанавливаем репозиторий системных групп для ParallelogramLogic
+        parallelogram_logic.system_group_repo = sg_repository
+        
         # Создаем главную модель приложения
         app_model = ApplicationModel(
             quantity_manager=quantity_manager,
@@ -66,12 +69,12 @@ class ApplicationFactory:
         
         # Можем добавить создание тестовых величин
         try:
-            # Добавляем несколько тестовых величин
+            # Добавляем несколько тестовых величин с разными L, T для тестирования параллелограмма
             test_quantities = [
-                ("Частота", "f", "Гц", "T^{-1}", -2, -2, "group1"),
-                ("Скорость", "v", "м/с", "L T^{-1}", 0, -2, "group2"),
-                ("Масса", "m", "кг", "M", 0, 0, "group2"),
-                ("Энергия", "E", "Дж", "M L^2 T^{-2}", 0, 1, "group2"),
+                ("Частота", "f", "Гц", "T^{-1}", 0, -1, "group1"),  # L=0, T=-1, G=1, k=1
+                ("Скорость", "v", "м/с", "L T^{-1}", 1, -1, "group2"),  # L=1, T=-1, G=2, k=2
+                ("Масса", "m", "кг", "M", 0, 0, "group3"),  # L=0, T=0, G=3, k=3
+                ("Энергия", "E", "Дж", "M L^2 T^{-2}", 2, -2, "group1"),  # L=2, T=-2, G=1, k=1
             ]
             
             for name, symbol, unit, dimension, L, T, group_id in test_quantities:

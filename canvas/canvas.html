@@ -6,27 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Physics Grid</title>
 
+    <!-- Подключение QWebChannel первым -->
+    <script src="qrc:/res/js/qwebchannel.js"></script>
+    
     <!-- Подключение KaTeX -->
     <script src="qrc:/res/js/katex.min.js"></script>
     <link rel="stylesheet" href="qrc:/res/css/katex.min.css" />
-
-    <script src="qrc:/res/js/qwebchannel.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    if (typeof qt !== "undefined") {
-        new QWebChannel(qt.webChannelTransport, function(channel) {
-            window.pyqtObject = channel.objects.backend;
-        });
-    } else {
-        console.error("QWebChannel не найден! Проверь, что qwebchannel.js загружен.");
-    }
-});
-</script>
 
     <!-- Другие библиотеки -->
     <script src="qrc:/res/js/jquery.min.js"></script>
     <script src="qrc:/res/js/html2canvas.min.js"></script>
     <script src="qrc:/res/js/konva.min.js"></script>
+
+    <script>
+    </script>
     <style>
         body { font-family: Arial, sans-serif; }
     </style>
@@ -122,6 +115,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 L = Math.round(L);
                 T = Math.round(T);
 
+                // Проверяем, есть ли сота в этих координатах
                 const key = `${L},${T}`;
                 const cellGroup = this.cells[key] || null;
 
@@ -129,6 +123,18 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (cellGroup != null) {
                     const cell = cellGroup.getChildren()[0];
                     group_name = cell.attrs.group_name;
+                    
+                    // Дополнительная проверка: убеждаемся, что клик действительно попал в эту соту
+                    const cellX = centerX + ((L - T) * (Math.sqrt(3) * hexSize + spacing)) / 2;
+                    const cellY = centerY - ((L + T) * (3 * hexSize + Math.sqrt(3) * spacing)) / 2;
+                    
+                    // Проверяем расстояние от центра соты
+                    const distance = Math.sqrt((x - cellX) ** 2 + (y - cellY) ** 2);
+                    
+                    // Если клик слишком далеко от центра соты, возвращаем null
+                    if (distance > hexSize * 1.2) {
+                        group_name = null;
+                    }
                 }
 
                 return { L, T, group_name };
@@ -192,6 +198,12 @@ document.addEventListener("DOMContentLoaded", function() {
                 this.layer.add(cellGroup);
 
                 const clickHandler = () => {
+                    // Проверяем блокировку операций с полем
+                    if (window.fieldOperationsBlocked) {
+                        console.log("🛡️ Field operations blocked");
+                        return;
+                    }
+                    
                     if (window.suppressNextClick) {
                         window.suppressNextClick = false;
                         console.log("🛡️ Click suppressed");
@@ -208,7 +220,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 // **Добавляем обработку ПКМ (правой кнопки мыши)**
                 cell.on("contextmenu", (e) => {
-                    e.evt.preventDefault(); // Отключаем стандартное контекстное меню
+                    e.evt.preventDefault(); // Отключаем ст��ндартное контекстное меню
+
+                    // Проверяем блокировку операций с полем
+                    if (window.fieldOperationsBlocked) {
+                        console.log("🛡️ Field operations blocked");
+                        return;
+                    }
 
                     const x = e.evt.clientX + window.scrollX;
                     const y = e.evt.clientY + window.scrollY;
@@ -222,12 +240,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     }
                 });
 
-                // **Добавляем обработку клика для выделения**
-                cell.on("click", () => {
-                    if (window.pyqtObject && window.pyqtObject.onCellSelected) {
-                        window.pyqtObject.onCellSelected(L, T, group_name);
-                    }
-                });
+
 
                 // 🔹 Добавление формулы внутри соты
                 this.createFormula(x - 105, y - 60, cellGroup, clickHandler, name, symbol, value_c);
@@ -266,7 +279,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 katex.render(katexString, tempEl, {
                     throwOnError: false,
-                    displayMode: true // Включает блочный режим
+                    displayMode: true, // Включает блочный режим
+                    output: "html"
                 });
 
                 html2canvas(tempEl, { backgroundColor: "rgba(0,0,0,0)" })
@@ -387,21 +401,6 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      new QWebChannel(qt.webChannelTransport, function (channel) {
-        window.pyqtObject = channel.objects.backend;
-        window.jsBridge = channel.objects.js_bridge;
-
-        ensureFieldExists(() => {
-          console.log("✅ Вызов sendAllCellsToWebView из JS");
-          if (window.jsBridge && window.jsBridge.send_all_cells_to_web_view) {
-            window.jsBridge.send_all_cells_to_web_view();
-          } else {
-            console.error("❌ Метод send_all_cells_to_web_view не найден в jsBridge");
-          }
-        });
-      });
-    });
 
         window.addEventListener("resize", () => {
             field.stage.width(window.innerWidth);

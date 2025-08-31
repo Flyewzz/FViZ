@@ -48,7 +48,23 @@ class LawDialog(QDialog):
             self.name_input.setText(law.name)
             self.desc_input.setText(law.description)
             self.formula_input.setText(law.formula)
-            index = self.group_selector.findText(law.group.name)
+            
+            # Поддержка как старой, так и новой архитектуры
+            if hasattr(law, 'group') and law.group:
+                # Старая архитектура
+                index = self.group_selector.findText(law.group.name)
+            elif hasattr(law, 'group_id') and law.group_id:
+                # Новая архитектура - найдем группу по ID
+                for i in range(self.group_selector.count()):
+                    group = self.group_selector.itemData(i)
+                    if group and group.id == law.group_id:
+                        index = i
+                        break
+                else:
+                    index = -1
+            else:
+                index = -1
+                
             if index != -1:
                 self.group_selector.setCurrentIndex(index)
         else:
@@ -102,9 +118,15 @@ class LawDialog(QDialog):
             save_btn = QPushButton("✅ Редактировать")
 
         cancel_btn = QPushButton("❌ Отмена")
+        delete_btn = QPushButton("🗑️ Удалить")
+        
         save_btn.clicked.connect(self.save)
         cancel_btn.clicked.connect(self.reject)
+        delete_btn.clicked.connect(self.delete_law)
+        
         button_layout.addWidget(cancel_btn)
+        if self.editing_law:
+            button_layout.addWidget(delete_btn)
         button_layout.addWidget(save_btn)
 
         layout.addLayout(button_layout)
@@ -152,20 +174,87 @@ class LawDialog(QDialog):
             self.editing_law.name = self.name_input.text()
             self.editing_law.description = self.desc_input.text()
             self.editing_law.formula = self.formula_input.text()
-            self.editing_law.group = group
+            
+            # Поддержка как старой, так и новой архитектуры
+            if hasattr(self.editing_law, 'group_id'):
+                # Новая архитектура
+                self.editing_law.group_id = group.id
+            else:
+                # Старая архитектура
+                self.editing_law.group = group
+                
             QMessageBox.information(self, "✅", "Закон обновлён!")
         else:
-            law = Law(
-                name=self.name_input.text(),
-                description=self.desc_input.text(),
-                formula=self.formula_input.text(),
-                variables=[q.name for q in self.selected_items],
-                group=group
-            )
-            group.laws.append(law)
-            QMessageBox.information(self, "✅", "Закон добавлен!")
+            # Сохраняем закон через backend/модель приложения
+            if hasattr(self.backend, 'app_model'):
+                try:
+                    self.backend.app_model.law_manager.create_law(
+                        self.name_input.text(),
+                        self.formula_input.text(),
+                        self.desc_input.text(),
+                        [q.name for q in self.selected_items],
+                        group.id
+                    )
+                    QMessageBox.information(self, "✅", "Закон добавлен!")
+                except Exception as e:
+                    QMessageBox.warning(self, "Ошибка", f"Не удалось создать закон: {e}")
+                    return
+            else:
+                # Fallback для старой архитектуры - создаем объект со старой моделью
+                law = Law(
+                    name=self.name_input.text(),
+                    formula=self.formula_input.text(),
+                    description=self.desc_input.text(),
+                    variables=[q.name for q in self.selected_items],
+                    group=group  # Передаем объект группы, а не ID
+                )
+                # Добавляем ID для совместимости с новой архитектурой
+                import uuid
+                law.id = str(uuid.uuid4())
+                if hasattr(group, 'laws'):
+                    group.laws.append(law)
+                QMessageBox.information(self, "✅", "Закон добавлен!")
 
         self.accept()
+
+    def delete_law(self):
+        """Удалить текущий закон"""
+        if not self.editing_law:
+            return
+        
+        # Подтверждение удаления
+        reply = QMessageBox.question(
+            self, "Подтверждение удаления",
+            f"Вы уверены, что хотите удалить закон '{self.editing_law.name}'?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply != QMessageBox.Yes:
+            return
+        
+        try:
+            # Удаляем через backend/модель приложения
+            if hasattr(self.backend, 'app_model'):
+                # Используем новую архитектуру
+                self.backend.app_model.law_manager.law_repo.remove_law(self.editing_law)
+                QMessageBox.information(self, "✅", "Закон удален!")
+            else:
+                # Fallback для старой архитектуры
+                if hasattr(self.editing_law, 'group') and hasattr(self.editing_law.group, 'laws'):
+                    self.editing_law.group.laws.remove(self.editing_law)
+                elif hasattr(self.editing_law, 'group_id'):
+                    # Если есть group_id, но нет прямой ссылки на группу
+                    for group in self.backend.law_groups:
+                        if hasattr(group, 'laws') and self.editing_law in group.laws:
+                            group.laws.remove(self.editing_law)
+                            break
+                QMessageBox.information(self, "✅", "Закон удален!")
+            
+            self.accept()
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось удалить закон: {e}")
 
     def update_group_color(self):
         group = self.group_selector.currentData()
