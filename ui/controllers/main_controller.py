@@ -1,0 +1,243 @@
+from typing import List, Optional, Tuple
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QPoint, QVariant
+from PyQt5.QtWidgets import QApplication, QAction, QMenu, QMessageBox, QFileDialog
+from PyQt5.QtGui import QImage
+import base64
+
+from core.use_cases.application_model import ApplicationModel
+from core.entities.physical_quantity import PhysicalQuantity
+
+
+class MainController(QObject):
+    """Основной контроллер приложения"""
+    
+    # Сигналы для обновления UI
+    cell_updated = pyqtSignal(str)
+    parallelogram_drawn = pyqtSignal(list, str)  # quantities, color
+    parallelogram_cleared = pyqtSignal()
+    all_cells_requested = pyqtSignal()
+    
+    def __init__(self, application_model: ApplicationModel, web_view):
+        super().__init__()
+        self.app_model = application_model
+        self.web_view = web_view
+    
+    # === Обработка взаимодействий с сотами ===
+    
+    @pyqtSlot(str)
+    def handle_cell_click(self, cell_data: str):
+        """Обработка клика по соте"""
+        print(f"Клик по соте: {cell_data}")
+        self.cell_updated.emit(f"Выбрана сота {cell_data}")
+    
+    @pyqtSlot(int, int, QVariant, int, int)
+    def show_context_menu(self, L: int, T: int, group_name: str, x: int, y: int):
+        """Показать контекстное меню для соты"""
+        print(f"ПКМ на соте: L={L}, T={T}, group={group_name}, x={x}, y={y}")
+        
+        menu = QMenu()
+        
+        # Показываем пункты редактирования/удаления только если есть группа (сотка существует)
+        if group_name and group_name.strip():
+            # Получаем альтернативные величины (исключая текущую группу)
+            alternatives = self.app_model.get_alternative_quantities(L, T, group_name)
+            
+            # Фильтруем альтернативы, чтобы исключить текущую соту
+            current_quantity = self._get_quantity_at_position(L, T, group_name)
+            alternatives = [q for q in alternatives if q != current_quantity]
+            
+            if alternatives:
+                sub_menu = QMenu("Заменить", menu)
+                for alt_quantity in alternatives:
+                    action = QAction(alt_quantity.name, sub_menu)
+                    action.triggered.connect(
+                        lambda _, q=alt_quantity: self._replace_and_suppress(L, T, q)
+                    )
+                    sub_menu.addAction(action)
+                menu.addMenu(sub_menu)
+            
+            # Редактировать и удалить
+            edit_action = QAction("Редактировать", menu)
+            delete_action = QAction("Удалить", menu)
+            
+            edit_action.triggered.connect(lambda: self._edit_and_suppress(L, T))
+            delete_action.triggered.connect(lambda: self._delete_and_suppress(L, T, group_name))
+            
+            menu.addAction(edit_action)
+            menu.addAction(delete_action)
+        
+        # Создать новую сотку если есть свободные группы
+        used_groups = self._get_used_groups_at_position(L, T)
+        all_groups = self.app_model.get_all_system_groups()
+        
+        if len(used_groups) < len(all_groups):
+            create_action = QAction("Создать", menu)
+            create_action.triggered.connect(
+                lambda: self._create_and_suppress(L, T, used_groups)
+            )
+            menu.addAction(create_action)
+        
+        menu.exec_(QPoint(x, y))
+    
+    @pyqtSlot(int, int, str)
+    def on_cell_selected(self, L: int, T: int, group_name: str):
+        """Обработка выделения соты"""
+        # Получаем физическую величину
+        quantity = self._get_quantity_at_position(L, T, group_name)
+        
+        if not quantity:
+            return
+        
+        # Переключаем выделение
+        self.app_model.toggle_quantity_selection(quantity)
+        
+        # Проверяем параллелограмм
+        parallelogram = self.app_model.check_parallelogram()
+        
+        if parallelogram:
+            # Ищем существующий закон
+            existing_law = self.app_model.find_law_for_selection()
+            
+            if existing_law:
+                # Получаем цвет группы законов
+                law_group = self.app_model.get_law_group_by_id(existing_law.group_id)
+                color = law_group.color if law_group else "#ff0000"
+                self.parallelogram_drawn.emit(parallelogram, color)
+                self._open_law_dialog(parallelogram, existing_law)
+            else:
+                self.parallelogram_drawn.emit(parallelogram, "")
+                self._open_law_dialog(parallelogram, None)
+        else:
+            self.parallelogram_cleared.emit()
+    
+    @pyqtSlot(int, int, str)
+    def onCellSelected(self, L: int, T: int, group_name: str):
+        """Альтернативное имя метода для совместимости с JS"""
+        self.on_cell_selected(L, T, group_name)
+    
+    @pyqtSlot(int, int, str, int, int)
+    def showContextMenu(self, L: int, T: int, group_name: str, x: int, y: int):
+        """Альтернативное имя метода для совместимости с JS"""
+        self.show_context_menu(L, T, group_name, x, y)
+    
+    @pyqtSlot()
+    def send_all_cells_to_web_view(self):
+        """Отправить все соты в WebView"""
+        print("📡 JS запросил отправку сот")
+        self.all_cells_requested.emit()
+    
+    @pyqtSlot(str)
+    def save_canvas_image(self, base64_data_url: str):
+        """Сохранить изображение канваса"""
+        try:
+            base64_data = base64_data_url.split(',')[1]
+            image_data = base64.b64decode(base64_data)
+            
+            file_path, _ = QFileDialog.getSaveFileName(
+                None,
+                "Сохранить изображение",
+                "",
+                "PNG Image (*.png);;JPEG Image (*.jpg *.jpeg)"
+            )
+            
+            if not file_path:
+                return
+            
+            image = QImage()
+            image.loadFromData(image_data)
+            
+            fmt = 'PNG' if file_path.lower().endswith('.png') else 'JPEG'
+            image.save(file_path, fmt)
+            
+            QMessageBox.information(None, "Экспорт", "Изображение успешно сохранено.")
+        except Exception as e:
+            QMessageBox.critical(None, "Ошибка", f"Не удалось сохранить изображение:\n{e}")
+    
+    # === Приватные методы ===
+    
+    def _replace_and_suppress(self, L: int, T: int, quantity: PhysicalQuantity):
+        """Заменить сотку и подавить следующий клик"""
+        self.app_model.set_visible_quantity(L, T, quantity)
+        self._suppress_next_click()
+    
+    def _edit_and_suppress(self, L: int, T: int):
+        """Редактировать сотку и подавить следующий клик"""
+        # Сигнал будет обработан в MainWindow
+        from ui.presenters.cell_edit_presenter import CellEditPresenter
+        app = QApplication.instance()
+        main_window = app.activeWindow()
+        
+        # Используем существующий презентер из главного окна
+        if hasattr(main_window, 'presenter'):
+            presenter = CellEditPresenter(self.app_model, L, T, parent=main_window)
+            # Передаем ссылку на существующий презентер
+            presenter.main_presenter = main_window.presenter
+        else:
+            presenter = CellEditPresenter(self.app_model, L, T, parent=main_window)
+            
+        presenter.show()
+        self._suppress_next_click()
+    
+    def _delete_and_suppress(self, L: int, T: int, group_name: str):
+        """Удалить сотку и подавить следующий клик"""
+        # Найдем группу по имени
+        groups = self.app_model.get_all_system_groups()
+        group_id = None
+        for group in groups:
+            if group.name == group_name:
+                group_id = group.id
+                break
+        
+        if group_id:
+            try:
+                self.app_model.delete_physical_quantity(L, T, group_id)
+            except ValueError as e:
+                print(f"Ошибка удаления: {e}")
+                # Не прерываем выполнение, просто логируем ошибку
+        
+        self._suppress_next_click()
+    
+    def _create_and_suppress(self, L: int, T: int, used_groups: List):
+        """Создать сотку и подавить следующий клик"""
+        from ui.presenters.cell_edit_presenter import CellEditPresenter
+        app = QApplication.instance()
+        presenter = CellEditPresenter(
+            self.app_model, L, T, 
+            create_mode=True, 
+            exclude_groups=used_groups,
+            parent=app.activeWindow()
+        )
+        presenter.show()
+        self._suppress_next_click()
+    
+    def _get_used_groups_at_position(self, L: int, T: int) -> List[str]:
+        """Получить занятые группы в позиции"""
+        # Получаем ID занятых групп
+        group_ids = self.app_model.get_used_groups_at_position(L, T)
+        # Преобразуем ID в объекты групп
+        all_groups = self.app_model.get_all_system_groups()
+        return [group for group in all_groups if group.id in group_ids]
+    
+    def _get_quantity_at_position(self, L: int, T: int, group_name: str) -> Optional[PhysicalQuantity]:
+        """Получить величину в позиции"""
+        # Найдем группу по имени
+        groups = self.app_model.get_all_system_groups()
+        for group in groups:
+            if group.name == group_name:
+                # Получаем величину из группы
+                return self.app_model.get_quantity_at_position(L, T, group.id)
+        return None
+    
+    def _open_law_dialog(self, quantities: List[PhysicalQuantity], existing_law=None):
+        """Открыть диалог закона"""
+        from ui.presenters.law_dialog_presenter import LawDialogPresenter
+        app = QApplication.instance()
+        presenter = LawDialogPresenter(
+            self.app_model, quantities, existing_law, 
+            parent=app.activeWindow()
+        )
+        presenter.show()
+    
+    def _suppress_next_click(self):
+        """Подавить следующий клик в WebView"""
+        self.web_view.page().runJavaScript("window.suppressNextClick = true;")

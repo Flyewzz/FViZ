@@ -23,7 +23,8 @@ class EditCellDialog(QDialog):
         self.cell = None
 
         if not self.create_mode:
-            self.cell = self.backend.visible_cells.get((L, T))
+            # Получаем текущую величину через презентер
+            self.cell = self.backend.get_current_quantity()
             if not self.cell:
                 self.close()
                 return
@@ -31,7 +32,7 @@ class EditCellDialog(QDialog):
         self.name_input = QLineEdit("" if self.create_mode else self.cell.name)
         self.symbol_input = QLineEdit("" if self.create_mode else self.cell.symbol)
         self.unit_input = QLineEdit("" if self.create_mode else self.cell.unit)
-        self.value_c_input = QLineEdit("" if self.create_mode else self.cell.value_c)
+        self.value_c_input = QLineEdit("" if self.create_mode else self.cell.unit)  # Используем unit вместо value_c
 
         layout.addWidget(QLabel(f"{'Создание' if create_mode else 'Редактирование'} соты (L={L}, T={T})"))
         layout.addWidget(QLabel("Название:"))
@@ -53,14 +54,11 @@ class EditCellDialog(QDialog):
         group_layout.addWidget(self.color_preview)
         layout.addLayout(group_layout)
 
-        for group in self.backend.system_groups:
-            if len(self.exclude_groups) > 0:
-                if group.name.lower() in [
-                    g.name.lower() for g in self.exclude_groups
-                ]:
-                    continue
+        # Получаем группы через метод презентера
+        available_groups = self.backend.get_available_groups()
+        for group in available_groups:
             self.group_selector.addItem(group.name, group)
-            if not create_mode and group == self.cell.group:
+            if not create_mode and self.cell and group.id == self.cell.group_id:
                 self.group_selector.setCurrentIndex(self.group_selector.count() - 1)
 
         self.group_selector.currentIndexChanged.connect(self.changeGroupColor)
@@ -94,10 +92,16 @@ class EditCellDialog(QDialog):
             return
 
         if self.create_mode:
-            from models.physical_value import PhysicalQuantity
-            new_cell = PhysicalQuantity(name, symbol, unit, value_c, group, self.L, self.T)
-            self.backend.create_cell(new_cell, group, True)
+            # Используем метод презентера для создания
+            success = self.backend.save_quantity(name, symbol, unit, value_c, group.id)
+            if success:
+                self.accept()
+            else:
+                QMessageBox.warning(self, "Ошибка", "Не удалось создать соту")
         else:
-            self.backend.apply_edit(self.L, self.T, name, symbol, unit, value_c, group)
-
-        self.accept()
+            # Используем метод презентера для обновления
+            success = self.backend.save_quantity(name, symbol, unit, value_c, group.id)
+            if success:
+                self.accept()
+            else:
+                QMessageBox.warning(self, "Ошибка", "Не удалось сохранить изменения")

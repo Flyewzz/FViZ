@@ -215,10 +215,17 @@ document.addEventListener("DOMContentLoaded", function() {
 
                     console.log(`ПКМ по соте L=${L}, T=${T}, позиция: x=${x}, y=${y}`);
 
-                    if (window.pyqtObject) {
-                        window.pyqtObject.showContextMenu(L, T); // Отправляем данные в PyQt
+                    if (window.jsBridge && window.jsBridge.show_context_menu) {
+                        window.jsBridge.show_context_menu(L, T, group_name, x, y); // Отправляем данные в PyQt
                     } else {
-                        console.error("PyQt объект не найден!");
+                        console.error("JS Bridge объект не найден!");
+                    }
+                });
+
+                // **Добавляем обработку клика для выделения**
+                cell.on("click", () => {
+                    if (window.pyqtObject && window.pyqtObject.onCellSelected) {
+                        window.pyqtObject.onCellSelected(L, T, group_name);
                     }
                 });
 
@@ -383,13 +390,14 @@ document.addEventListener("DOMContentLoaded", function() {
     document.addEventListener("DOMContentLoaded", () => {
       new QWebChannel(qt.webChannelTransport, function (channel) {
         window.pyqtObject = channel.objects.backend;
+        window.jsBridge = channel.objects.js_bridge;
 
         ensureFieldExists(() => {
           console.log("✅ Вызов sendAllCellsToWebView из JS");
-          if (window.pyqtObject.sendAllCellsToWebView) {
-            window.pyqtObject.sendAllCellsToWebView();
+          if (window.jsBridge && window.jsBridge.send_all_cells_to_web_view) {
+            window.jsBridge.send_all_cells_to_web_view();
           } else {
-            console.error("❌ Метод sendAllCellsToWebView не найден в pyqtObject");
+            console.error("❌ Метод send_all_cells_to_web_view не найден в jsBridge");
           }
         });
       });
