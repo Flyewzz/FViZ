@@ -21,12 +21,65 @@
     <script>
     </script>
     <style>
-        body { font-family: Arial, sans-serif; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #f5f5f5;
+        }
+        #root {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+        .canvas-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: auto;
+        }
+        .zoom-controls {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .zoom-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin: 2px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .zoom-btn:hover {
+            background: #0056b3;
+        }
+        .fit-btn {
+            background: #28a745;
+        }
+        .fit-btn:hover {
+            background: #1e7e34;
+        }
     </style>
 </head>
 
 <body>
-    <div id="root"></div> <!-- Контейнер для рендеринга Konva -->
+    <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomIn()">+</button>
+        <button class="zoom-btn" onclick="zoomOut()">−</button>
+        <button class="zoom-btn fit-btn" onclick="fitToContent()">Fit</button>
+        <button class="zoom-btn" onclick="resetView()">Reset</button>
+    </div>
+    <div id="root" class="canvas-container"></div> <!-- Контейнер для рендеринга Konva -->
 
     <script>
         let centerX;
@@ -442,6 +495,192 @@
                 }
             });
         }
+
+        // Функции для контролов масштабирования
+        function zoomIn() {
+            const currentZoom = field.getZoom();
+            const newZoom = Math.min(currentZoom * 1.2, 5.0);
+            field.setZoom(newZoom);
+        }
+
+        function zoomOut() {
+            const currentZoom = field.getZoom();
+            const newZoom = Math.max(currentZoom / 1.2, 0.1);
+            field.setZoom(newZoom);
+        }
+
+        function fitToContent() {
+            field.fitToContent();
+        }
+
+        function resetView() {
+            field.setZoom(1.0);
+            field.stage.position({ x: 0, y: 0 });
+            field.stage.batchDraw();
+        }
+
+        // Улучшенная обработка изменения размера окна
+        let resizeTimeout;
+        window.addEventListener("resize", () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                const newWidth = window.innerWidth;
+                const newHeight = window.innerHeight;
+                
+                field.stage.width(newWidth);
+                field.stage.height(newHeight);
+                
+                // Обновляем центр для правильного позиционирования новых сот
+                centerX = newWidth / 2;
+                centerY = newHeight / 2;
+                
+                field.stage.batchDraw();
+            }, 100);
+        });
+
+        // Добавляем поддержку колесика мыши для масштабирования
+        document.getElementById('root').addEventListener('wheel', (e) => {
+            e.preventDefault();
+            
+            const scaleBy = 1.05;
+            const stage = field.stage;
+            const oldScale = stage.scaleX();
+            const pointer = stage.getPointerPosition();
+            
+            const mousePointTo = {
+                x: (pointer.x - stage.x()) / oldScale,
+                y: (pointer.y - stage.y()) / oldScale,
+            };
+            
+            let newScale = e.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
+            newScale = Math.max(0.1, Math.min(5.0, newScale));
+            
+            stage.scale({ x: newScale, y: newScale });
+            
+            const newPos = {
+                x: pointer.x - mousePointTo.x * newScale,
+                y: pointer.y - mousePointTo.y * newScale,
+            };
+            
+            stage.position(newPos);
+            stage.batchDraw();
+        });
+
+        // Улучшенная поддержка перетаскивания канваса
+        let isDragging = false;
+        let lastPointerPosition = {};
+        let touchStartDistance = 0;
+        let touchStartScale = 1;
+
+        field.stage.on('mousedown touchstart', (e) => {
+            // Обработка мультитач для масштабирования
+            if (e.evt.touches && e.evt.touches.length === 2) {
+                const touch1 = e.evt.touches[0];
+                const touch2 = e.evt.touches[1];
+                touchStartDistance = Math.sqrt(
+                    Math.pow(touch2.clientX - touch1.clientX, 2) +
+                    Math.pow(touch2.clientY - touch1.clientY, 2)
+                );
+                touchStartScale = field.stage.scaleX();
+                return;
+            }
+            
+            // Обработка перетаскивания
+            if (e.evt.button === 1 || e.evt.ctrlKey || e.evt.touches) { // Средняя кнопка, Ctrl+клик или тач
+                isDragging = true;
+                lastPointerPosition = field.stage.getPointerPosition();
+                field.stage.container().style.cursor = 'grabbing';
+                e.evt.preventDefault();
+            }
+        });
+
+        field.stage.on('mousemove touchmove', (e) => {
+            // Обработка мультитач масштабирования
+            if (e.evt.touches && e.evt.touches.length === 2) {
+                e.evt.preventDefault();
+                const touch1 = e.evt.touches[0];
+                const touch2 = e.evt.touches[1];
+                const currentDistance = Math.sqrt(
+                    Math.pow(touch2.clientX - touch1.clientX, 2) +
+                    Math.pow(touch2.clientY - touch1.clientY, 2)
+                );
+                
+                const scale = (currentDistance / touchStartDistance) * touchStartScale;
+                const newScale = Math.max(0.1, Math.min(5.0, scale));
+                
+                // Центр масштабирования - между двумя пальцами
+                const centerX = (touch1.clientX + touch2.clientX) / 2;
+                const centerY = (touch1.clientY + touch2.clientY) / 2;
+                
+                const rect = field.stage.container().getBoundingClientRect();
+                const pointer = {
+                    x: centerX - rect.left,
+                    y: centerY - rect.top
+                };
+                
+                const oldScale = field.stage.scaleX();
+                const mousePointTo = {
+                    x: (pointer.x - field.stage.x()) / oldScale,
+                    y: (pointer.y - field.stage.y()) / oldScale,
+                };
+                
+                field.stage.scale({ x: newScale, y: newScale });
+                
+                const newPos = {
+                    x: pointer.x - mousePointTo.x * newScale,
+                    y: pointer.y - mousePointTo.y * newScale,
+                };
+                
+                field.stage.position(newPos);
+                field.stage.batchDraw();
+                return;
+            }
+            
+            // Обработка перетаскивания
+            if (!isDragging) return;
+            
+            e.evt.preventDefault();
+            const pos = field.stage.getPointerPosition();
+            
+            if (pos && lastPointerPosition) {
+                const dx = pos.x - lastPointerPosition.x;
+                const dy = pos.y - lastPointerPosition.y;
+                
+                const newPos = {
+                    x: field.stage.x() + dx,
+                    y: field.stage.y() + dy,
+                };
+                
+                field.stage.position(newPos);
+                field.stage.batchDraw();
+                lastPointerPosition = pos;
+            }
+        });
+
+        field.stage.on('mouseup touchend', (e) => {
+            isDragging = false;
+            field.stage.container().style.cursor = 'default';
+            
+            // Сброс мультитач состояния
+            if (!e.evt.touches || e.evt.touches.length < 2) {
+                touchStartDistance = 0;
+                touchStartScale = 1;
+            }
+        });
+
+        // Дополнительная обработка для лучшей поддержки тач-событий
+        field.stage.container().addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                // Одиночное касание - подготовка к перетаскиванию
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        field.stage.container().addEventListener('touchmove', (e) => {
+            if (e.touches.length >= 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
     </script>
 </body>
 </html>

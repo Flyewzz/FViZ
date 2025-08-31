@@ -10,5 +10,7 @@
     <file>res/js/html2canvas.min.js</file>
 
     <file>res/js/konva.min.js</file>
+    
+    <file>canvas/canvas.html</file>
 </qresource>
 </RCC>

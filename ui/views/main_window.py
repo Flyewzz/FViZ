@@ -95,7 +95,24 @@ class MainWindow(QMainWindow):
     
     def _load_web_interface(self):
         """Загрузка веб-интерфейса"""
-        self.webView.setHtml(open("canvas/canvas.html", encoding="utf-8").read())
+        try:
+            # Пытаемся загрузить из ресурсов (для .exe)
+            from PyQt5.QtCore import QFile, QIODevice
+            file = QFile(":/canvas/canvas.html")
+            if file.open(QIODevice.ReadOnly):
+                html_content = str(file.readAll(), 'utf-8')
+                file.close()
+                self.webView.setHtml(html_content)
+            else:
+                # Fallback: загружаем из файловой системы (для разработки)
+                with open("canvas/canvas.html", encoding="utf-8") as f:
+                    self.webView.setHtml(f.read())
+        except Exception as e:
+            print(f"Ошибка загрузки веб-интерфейса: {e}")
+            # Последний fallback
+            with open("canvas/canvas.html", encoding="utf-8") as f:
+                self.webView.setHtml(f.read())
+        
         self.webView.page().loadFinished.connect(self.init_web_channel)
     
     def _init_menu(self):
