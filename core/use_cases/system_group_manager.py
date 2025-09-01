@@ -89,9 +89,17 @@ class SystemGroupManager:
     def validate_name_uniqueness(self, name: str, exclude_id: Optional[str] = None) -> bool:
         """Проверить уникальность названия"""
         existing = self.system_group_repo.get_by_name(name)
-        return existing is None or (exclude_id and existing.id == exclude_id)
+        if existing is None:
+            return True
+        if exclude_id and existing.id == exclude_id:
+            return True
+        return False
     
     def validate_gk_uniqueness(self, G: int, k: int, exclude_id: Optional[str] = None) -> bool:
         """Проверить уникальность комбинации G и k"""
         existing = self.system_group_repo.get_by_gk(G, k)
-        return existing is None or (exclude_id and existing.id == exclude_id)
+        if existing is None:
+            return True
+        if exclude_id and existing.id == exclude_id:
+            return True
+        return False
