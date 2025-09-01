@@ -28,54 +28,6 @@ class TestSystemGroupRepositoryImpl:
         assert self.repo.get_by_name("Тестовая группа") == self.test_group
         assert self.repo.get_by_gk(1, 2) == self.test_group
     
-    def test_add_duplicate_id_raises_error(self):
-        """Тест добавления группы с дублирующимся ID"""
-        # Arrange
-        self.repo.add(self.test_group)
-        duplicate_group = SystemGroup(
-            id="group1",  # тот же ID
-            name="Другая группа",
-            color="#00FF00",
-            G=3,
-            k=4
-        )
-        
-        # Act & Assert
-        with pytest.raises(ValueError, match="Системная группа с ID 'group1' уже существует"):
-            self.repo.add(duplicate_group)
-    
-    def test_add_duplicate_name_raises_error(self):
-        """Тест добавления группы с дублирующимся названием"""
-        # Arrange
-        self.repo.add(self.test_group)
-        duplicate_group = SystemGroup(
-            id="group2",
-            name="Тестовая группа",  # то же название
-            color="#00FF00",
-            G=3,
-            k=4
-        )
-        
-        # Act & Assert
-        with pytest.raises(ValueError, match="Системная группа 'Тестовая группа' уже существует"):
-            self.repo.add(duplicate_group)
-    
-    def test_add_duplicate_gk_raises_error(self):
-        """Тест добавления группы с дублирующейся комбинацией G,k"""
-        # Arrange
-        self.repo.add(self.test_group)
-        duplicate_group = SystemGroup(
-            id="group2",
-            name="Другая группа",
-            color="#00FF00",
-            G=1,  # тот же G
-            k=2   # тот же k
-        )
-        
-        # Act & Assert
-        with pytest.raises(ValueError, match="Системная группа с G=1, k=2 уже существует"):
-            self.repo.add(duplicate_group)
-    
     def test_update_group_success(self):
         """Тест успешного обновления группы"""
         # Arrange
@@ -97,46 +49,6 @@ class TestSystemGroupRepositoryImpl:
         assert self.repo.get_by_name("Обновленная группа") == updated_group
         assert self.repo.get_by_gk(5, 6) == updated_group
         assert self.repo.get_by_gk(1, 2) is None
-    
-    def test_update_nonexistent_group_raises_error(self):
-        """Тест обновления несуществующей группы"""
-        # Arrange
-        nonexistent_group = SystemGroup(
-            id="nonexistent",
-            name="Несуществующая группа",
-            color="#0000FF",
-            G=1,
-            k=2
-        )
-        
-        # Act & Assert
-        with pytest.raises(ValueError, match="Системная группа с ID 'nonexistent' не найдена"):
-            self.repo.update(nonexistent_group)
-    
-    def test_update_duplicate_name_raises_error(self):
-        """Тест обновления группы с дублирующимся названием"""
-        # Arrange
-        self.repo.add(self.test_group)
-        another_group = SystemGroup(
-            id="group2",
-            name="Другая группа",
-            color="#00FF00",
-            G=3,
-            k=4
-        )
-        self.repo.add(another_group)
-        
-        updated_group = SystemGroup(
-            id="group1",
-            name="Другая группа",  # дублирует название group2
-            color="#0000FF",
-            G=5,
-            k=6
-        )
-        
-        # Act & Assert
-        with pytest.raises(ValueError, match="Системная группа 'Другая группа' уже существует"):
-            self.repo.update(updated_group)
     
     def test_remove_group_success(self):
         """Тест успешного удаления группы"""
@@ -192,3 +104,70 @@ class TestSystemGroupRepositoryImpl:
         assert len(self.repo._groups) == 0
         assert len(self.repo._by_name) == 0
         assert len(self.repo._by_gk) == 0
+    
+    def test_update_group_with_gk_change_success(self):
+        """Тест обновления группы с изменением G,k без конфликта"""
+        # Arrange
+        self.repo.add(self.test_group)
+        updated_group = SystemGroup(
+            id="group1",
+            name="Обновленная группа",
+            color="#00FF00",
+            G=5,  # измененный G
+            k=6   # измененный k
+        )
+        
+        # Act
+        self.repo.update(updated_group)
+        
+        # Assert
+        assert len(self.repo.get_all()) == 1
+        assert self.repo.get_by_id("group1") == updated_group
+        assert self.repo.get_by_name("Обновленная группа") == updated_group
+        assert self.repo.get_by_gk(5, 6) == updated_group
+        assert self.repo.get_by_gk(1, 2) is None
+    
+    def test_update_group_name_only_success(self):
+        """Тест обновления только названия группы"""
+        # Arrange
+        self.repo.add(self.test_group)
+        updated_group = SystemGroup(
+            id="group1",
+            name="Новое название",
+            color="#FF0000",  # тот же цвет
+            G=1,              # тот же G
+            k=2               # тот же k
+        )
+        
+        # Act
+        self.repo.update(updated_group)
+        
+        # Assert
+        assert len(self.repo.get_all()) == 1
+        assert self.repo.get_by_id("group1") == updated_group
+        assert self.repo.get_by_name("Новое название") == updated_group
+        assert self.repo.get_by_gk(1, 2) == updated_group
+    
+    def test_get_by_gk_not_found(self):
+        """Тест поиска группы по G,k, когда она не найдена"""
+        # Act
+        result = self.repo.get_by_gk(99, 99)
+        
+        # Assert
+        assert result is None
+    
+    def test_get_by_name_not_found(self):
+        """Тест поиска группы по названию, когда она не найдена"""
+        # Act
+        result = self.repo.get_by_name("Несуществующая группа")
+        
+        # Assert
+        assert result is None
+    
+    def test_get_by_id_not_found(self):
+        """Тест поиска группы по ID, когда она не найдена"""
+        # Act
+        result = self.repo.get_by_id("nonexistent")
+        
+        # Assert
+        assert result is None

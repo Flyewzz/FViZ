@@ -317,3 +317,215 @@ class TestPhysicalQuantityRepositoryImpl:
         
         not_exists = self.repo.exists_by_name("Несуществующая")
         assert not_exists is False
+    
+    def test_update_quantity_with_position_change(self):
+        """Тест обновления величины с изменением позиции"""
+        # Arrange
+        self.repo.save(self.test_quantity)
+        updated_quantity = PhysicalQuantity(
+            name="Длина",
+            symbol="L",
+            unit="м",
+            dimension="L",
+            L=2,  # измененная позиция
+            T=1,  # измененная позиция
+            group_id="group1"
+        )
+        
+        # Act
+        self.repo.update(self.test_quantity, updated_quantity)
+        
+        # Assert
+        quantities = self.repo.find_all()
+        assert len(quantities) == 1
+        assert updated_quantity in quantities
+        assert self.test_quantity not in quantities
+        
+        # Проверка, что величина теперь в новой позиции
+        found_quantity = self.repo.find_by_position(2, 1, "group1")
+        assert found_quantity == updated_quantity
+        
+        # Проверка, что в старой позиции ничего нет
+        old_position = self.repo.find_by_position(1, 0, "group1")
+        assert old_position is None
+    
+    def test_update_quantity_with_group_change(self):
+        """Тест обновления величины с изменением группы"""
+        # Arrange
+        another_group = SystemGroup(
+            id="group2",
+            name="Другая группа",
+            color="#00FF00",
+            G=3,
+            k=4
+        )
+        self.repo.save(self.test_quantity)
+        updated_quantity = PhysicalQuantity(
+            name="Длина",
+            symbol="L",
+            unit="м",
+            dimension="L",
+            L=1,
+            T=0,
+            group_id="group2"  # измененная группа
+        )
+        
+        # Act
+        self.repo.update(self.test_quantity, updated_quantity)
+        
+        # Assert
+        quantities = self.repo.find_all()
+        assert len(quantities) == 1
+        assert updated_quantity in quantities
+        assert self.test_quantity not in quantities
+        
+        # Проверка, что величина теперь в новой группе
+        found_quantity = self.repo.find_by_position(1, 0, "group2")
+        assert found_quantity == updated_quantity
+        
+        # Проверка, что в старой группе ничего нет
+        old_group = self.repo.find_all_by_group("group1")
+        assert len(old_group) == 0
+        
+        # Проверка, что в новой группе есть величина
+        new_group = self.repo.find_all_by_group("group2")
+        assert len(new_group) == 1
+        assert updated_quantity in new_group
+    
+    def test_update_quantity_with_existing_coordinates_same_group(self):
+        """Тест обновления величины с существующими координатами в той же группе"""
+        # Arrange
+        another_quantity = PhysicalQuantity(
+            name="Масса",
+            symbol="m",
+            unit="кг",
+            dimension="M",
+            L=1,  # те же координаты
+            T=0,  # те же координаты
+            group_id="group1"
+        )
+        self.repo.save(self.test_quantity)
+        self.repo.save(another_quantity)
+        
+        updated_quantity = PhysicalQuantity(
+            name="Длина",
+            symbol="L'",
+            unit="м",
+            dimension="L",
+            L=1,  # те же координаты
+            T=0,  # те же координаты
+            group_id="group1"
+        )
+        
+        # Act
+        self.repo.update(self.test_quantity, updated_quantity)
+        
+        # Assert
+        quantities = self.repo.find_all()
+        assert len(quantities) == 1  # должна остаться только одна величина
+        assert updated_quantity in quantities
+        assert self.test_quantity not in quantities
+        assert another_quantity not in quantities
+    
+    def test_delete_method_raises_not_implemented_error(self):
+        """Тест метода delete, который должен вызывать NotImplementedError"""
+        # Act & Assert
+        with pytest.raises(NotImplementedError):
+            self.repo.delete("some_id")
+    
+    def test_find_all_by_position_empty_result(self):
+        """Тест поиска всех величин в позиции, когда ничего не найдено"""
+        # Act
+        result = self.repo.find_all_by_position(99, 99)
+        
+        # Assert
+        assert result == []
+    
+    def test_find_all_by_group_empty_result(self):
+        """Тест поиска всех величин в группе, когда группа не существует"""
+        # Act
+        result = self.repo.find_all_by_group("nonexistent_group")
+        
+        # Assert
+        assert result == []
+    
+    def test_get_all_quantities_by_position_empty_result(self):
+        """Тест получения всех величин по позициям, когда данных нет"""
+        # Act
+        result = self.repo.get_all_quantities_by_position()
+        
+        # Assert
+        assert result == {}
+    
+    def test_get_visible_quantity_not_found(self):
+        """Тест получения видимой величины, когда она не установлена"""
+        # Act
+        result = self.repo.get_visible_quantity(99, 99)
+        
+        # Assert
+        assert result is None
+    
+    def test_remove_visible_quantity_not_found_no_error(self):
+        """Тест удаления видимой величины, когда ее нет (не должен вызывать ошибку)"""
+        # Act
+        self.repo.remove_visible_quantity(99, 99)
+        
+        # Assert
+        # Не должно быть ошибок
+        pass
+    
+    def test_get_all_visible_quantities_empty_result(self):
+        """Тест получения всех видимых величин, когда их нет"""
+        # Act
+        result = self.repo.get_all_visible_quantities()
+        
+        # Assert
+        assert result == {}
+    
+    def test_save_quantity_with_negative_coordinates(self):
+        """Тест сохранения величины с отрицательными координатами"""
+        # Arrange
+        quantity_with_negative_coords = PhysicalQuantity(
+            name="Отрицательная координата",
+            symbol="N",
+            unit="м",
+            dimension="L",
+            L=-1,
+            T=-2,
+            group_id="group1"
+        )
+        
+        # Act
+        self.repo.save(quantity_with_negative_coords)
+        
+        # Assert
+        quantities = self.repo.find_all()
+        assert len(quantities) == 1
+        assert quantity_with_negative_coords in quantities
+        
+        found_quantity = self.repo.find_by_position(-1, -2, "group1")
+        assert found_quantity == quantity_with_negative_coords
+    
+    def test_save_quantity_with_zero_coordinates(self):
+        """Тест сохранения величины с нулевыми координатами"""
+        # Arrange
+        quantity_with_zero_coords = PhysicalQuantity(
+            name="Нулевая координата",
+            symbol="Z",
+            unit="м",
+            dimension="L",
+            L=0,
+            T=0,
+            group_id="group1"
+        )
+        
+        # Act
+        self.repo.save(quantity_with_zero_coords)
+        
+        # Assert
+        quantities = self.repo.find_all()
+        assert len(quantities) == 1
+        assert quantity_with_zero_coords in quantities
+        
+        found_quantity = self.repo.find_by_position(0, 0, "group1")
+        assert found_quantity == quantity_with_zero_coords
