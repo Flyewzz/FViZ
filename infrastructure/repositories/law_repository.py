@@ -119,8 +119,7 @@ class LawRepositoryImpl(ILawRepository):
         self._laws.clear()
         self._laws_by_group.clear()
         for group_id in list(self._law_groups.keys()):
-            if group_id not in ["mechanics", "electrodynamics", "thermodynamics"]:
-                del self._law_groups[group_id]
+            del self._law_groups[group_id]
         
         # Очищаем списки законов в базовых группах
         for group_id in self._law_groups.keys():

@@ -17,7 +17,8 @@ class PhysicalQuantity:
         """Валидация при создании"""
         if not self.name.strip():
             raise ValueError("Название не может быть пустым")
-        if not self.symbol.strip():
+        # Разрешаем пустые символы, но если есть - проверяем
+        if self.symbol and not self.symbol.strip():
             raise ValueError("Условное обозначение не может быть пустым")
     
     def get_coordinates(self) -> tuple[int, int]:

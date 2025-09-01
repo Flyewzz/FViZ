@@ -36,7 +36,7 @@ class FileService:
             all_quantities = app_model.get_all_quantities()
             all_laws = app_model.law_manager.law_repo.get_all_laws()
             
-            # Формируем данные для сохранения
+            # Формируем данные для сохранения в новом формате
             data = {
                 "system_groups": [
                     {
@@ -51,35 +51,39 @@ class FileService:
                     {
                         "id": g.id,
                         "name": g.name,
-                        "color": g.color
+                        "color": g.color,
+                        "laws": [
+                            {
+                                "id": law.id,
+                                "name": law.name,
+                                "formula": law.formula,
+                                "description": law.description,
+                                "variables": law.variables
+                            } for law in all_laws if law.group_id == g.id
+                        ]
                     } for g in law_groups
                 ],
-                "laws": [
-                    {
-                        "id": law.id,
-                        "name": law.name,
-                        "formula": law.formula,
-                        "description": law.description,
-                        "variables": law.variables,
-                        "group_id": law.group_id
-                    } for law in all_laws
-                ],
-                "quantities": [],
-                "visible_quantities": []
+                "quantities": []
             }
             
-            # Добавляем все физические величины
+            # Добавляем все физические величины с visible полем
             for (L, T), quantities_list in all_quantities.items():
                 for quantity in quantities_list:
-                    data["quantities"].append(quantity.to_dict())
-            
-            # Добавляем видимые величины (координаты и group_id достаточно для идентификации)
-            for (L, T), quantity in visible_quantities.items():
-                data["visible_quantities"].append({
-                    "L": L,
-                    "T": T,
-                    "group_id": quantity.group_id
-                })
+                    # Проверяем, является ли величина видимой
+                    is_visible = False
+                    for (vis_L, vis_T), vis_quantity in visible_quantities.items():
+                        if vis_quantity.id == quantity.id:
+                            is_visible = True
+                            break
+                    
+                    quantity_dict = quantity.to_dict()
+                    # Добавляем поле "visible"
+                    quantity_dict["visible"] = is_visible
+                    # Добавляем поле "group" для backward compatibility
+                    system_group = app_model.get_system_group_by_id(quantity.group_id)
+                    if system_group:
+                        quantity_dict["group"] = system_group.name
+                    data["quantities"].append(quantity_dict)
             
             # Сохраняем в файл
             with open(path, 'w', encoding='utf-8') as f:
@@ -130,80 +134,139 @@ class FileService:
         try:
             app_model = self.cell_service.app_model
             
+            print("🔍 Начало загрузки новой архитектуры")
+            print(f"📄 Загружаемые данные: {len(data.get('system_groups', []))} групп, {len(data.get('law_groups', []))} групп законов, {len(data.get('quantities', []))} величин")
+            
             # Очищаем все данные
             app_model.clear_all_data()
+            print("🧹 Очищены все данные")
             
             # Загружаем системные группы
-            for g_data in data.get("system_groups", []):
+            system_groups = data.get("system_groups", [])
+            print(f"📁 Загрузка {len(system_groups)} системных групп")
+            for i, g_data in enumerate(system_groups):
                 try:
+                    print(f"  📋 Обработка группы {i+1}/{len(system_groups)}: {g_data.get('name', 'Без имени')}")
+                    # Если ID нет, используем имя как ID
+                    group_id = g_data.get("id")
+                    if not group_id:
+                        group_id = g_data["name"]
+                        print(f"    ⚠️ ID не найден, используется имя: {group_id}")
+                    
                     app_model.create_system_group(
-                        g_data["id"],
+                        group_id,
                         g_data["name"],
                         g_data["color"],
                         g_data["G"],
                         g_data["k"]
                     )
+                    print(f"    ✅ Группа создана: {g_data['name']} (ID: {group_id})")
                 except Exception as e:
-                    print(f"Ошибка создания системной группы: {e}")
+                    print(f"    ❌ Ошибка создания системной группы: {e}")
             
-            # Загружаем группы законов
-            for lg_data in data.get("law_groups", []):
+            # Загружаем группы законов с законами внутри
+            law_groups = data.get("law_groups", [])
+            print(f"📚 Загрузка {len(law_groups)} групп законов")
+            for i, lg_data in enumerate(law_groups):
                 try:
+                    print(f"  📖 Обработка группы законов {i+1}/{len(law_groups)}: {lg_data.get('name', 'Без имени')}")
+                    # Если ID нет, используем имя как ID
+                    law_group_id = lg_data.get("id")
+                    if not law_group_id:
+                        law_group_id = lg_data["name"]
+                        print(f"    ⚠️ ID не найден, используется имя: {law_group_id}")
+                    
                     app_model.create_law_group(
-                        lg_data["id"],
+                        law_group_id,
                         lg_data["name"],
                         lg_data["color"]
                     )
+                    print(f"    ✅ Группа законов создана: {lg_data['name']}")
+                    
+                    # Загружаем законы внутри группы
+                    laws = lg_data.get("laws", [])
+                    print(f"    📝 Загрузка {len(laws)} законов")
+                    for j, law_data in enumerate(laws):
+                        try:
+                            from core.entities.law import Law
+                            law = Law(
+                                name=law_data["name"],
+                                formula=law_data["formula"],
+                                description=law_data["description"],
+                                variables=law_data["variables"],
+                                group_id=law_group_id
+                            )
+                            law.id = law_data.get("id")  # Устанавливаем ID отдельно
+                            app_model.law_manager.law_repo.add_law(law)
+                            print(f"      ✅ Закон создан: {law_data['name']}")
+                        except Exception as e:
+                            print(f"      ❌ Ошибка создания закона: {e}")
+                            
                 except Exception as e:
-                    print(f"Ошибка создания группы законов: {e}")
+                    print(f"    ❌ Ошибка создания группы законов: {e}")
             
             # Загружаем физические величины
-            for q_data in data.get("quantities", []):
-                try:
-                    quantity = app_model.create_physical_quantity(
-                        q_data["name"],
-                        q_data["symbol"],
-                        q_data["unit"],
-                        q_data["dimension"],
-                        q_data["L"],
-                        q_data["T"],
-                        q_data["group_id"]
-                    )
-                except Exception as e:
-                    print(f"Ошибка создания физической величины: {e}")
+            quantities = data.get("quantities", [])
+            print(f"🔬 Загрузка {len(quantities)} физических величин")
+            visible_count = 0
+            visible_quantities = {}  # Инициализируем словарь для видимых величин
             
-            # Загружаем законы
-            for law_data in data.get("laws", []):
+            for i, q_data in enumerate(quantities):
                 try:
-                    from core.entities.law import Law
-                    law = Law(
-                        name=law_data["name"],
-                        formula=law_data["formula"],
-                        description=law_data["description"],
-                        variables=law_data["variables"],
-                        group_id=law_data["group_id"]
-                    )
-                    law.id = law_data.get("id")  # Устанавливаем ID отдельно
-                    app_model.law_manager.law_repo.add_law(law)
+                    print(f"  ⚛️ Обработка величины {i+1}/{len(quantities)}: {q_data.get('name', 'Без имени')}")
+                    # Получаем group_id из нового формата или из backward compatibility
+                    group_id = q_data.get("group_id")
+                    if not group_id and "group" in q_data:
+                        # Ищем группу по имени для backward compatibility
+                        group_name = q_data["group"]
+                        print(f"    🔍 Поиск группы по имени: {group_name}")
+                        for group in app_model.get_all_system_groups():
+                            if group.name == group_name:
+                                group_id = group.id
+                                print(f"    ✅ Найдена группа: {group_name} (ID: {group_id})")
+                                break
+                    
+                    if group_id:
+                        quantity = app_model.create_physical_quantity(
+                            q_data["name"],
+                            q_data["symbol"],
+                            q_data["unit"],
+                            q_data["dimension"],
+                            q_data["L"],
+                            q_data["T"],
+                            group_id
+                        )
+                        
+                        # Устанавливаем видимость напрямую
+                        is_visible = q_data.get("visible", False)
+                        if is_visible:
+                            visible_count += 1
+                            app_model.set_visible_quantity(q_data["L"], q_data["T"], quantity)
+                            print(f"    👁️ Величина видима: {q_data['name']} (L={q_data['L']}, T={q_data['T']})")
+                        else:
+                            print(f"    👁️ Величина скрыта: {q_data['name']} (L={q_data['L']}, T={q_data['T']})")
+                    else:
+                        print(f"    ❌ Не удалось найти группу для величины: {q_data['name']}")
+                        
                 except Exception as e:
-                    print(f"Ошибка создания закона: {e}")
+                    print(f"    ❌ Ошибка создания физической величины: {e}")
             
-            # Устанавливаем видимые величины
-            for vq_data in data.get("visible_quantities", []):
-                try:
-                    quantity = app_model.get_quantity_at_position(
-                        vq_data["L"],
-                        vq_data["T"],
-                        vq_data["group_id"]
-                    )
-                    if quantity:
-                        app_model.set_visible_quantity(vq_data["L"], vq_data["T"], quantity)
-                except Exception as e:
-                    print(f"Ошибка установки видимой величины: {e}")
+            print(f"📊 Статистика: {len(quantities)} величин загружено, {visible_count} видимых")
+            
+            # Проверка загруженных данных
+            loaded_groups = app_model.get_all_system_groups()
+            loaded_quantities = app_model.get_all_quantities()
+            loaded_visible = app_model.get_visible_quantities()
+            
+            print(f"📈 Итоговая статистика:")
+            print(f"  📁 Системных групп: {len(loaded_groups)}")
+            print(f"  ⚛️ Физических величин: {sum(len(q_list) for q_list in loaded_quantities.values())}")
+            print(f"  👁️ Видимых величин: {len(loaded_visible)}")
             
             QMessageBox.information(parent, "✅", "Проект успешно загружен!")
             
         except Exception as e:
+            print(f"❌ Критическая ошибка загрузки: {str(e)}")
             QMessageBox.critical(parent, "Ошибка", f"Ошибка загрузки новой архитектуры: {str(e)}")
 
     def _load_old_architecture(self, data, parent):
