@@ -103,16 +103,21 @@ class PhysicalQuantityManager:
         if not quantity:
             raise ValueError(f"Физическая величина на координатах ({L}, {T}) в группе {group_id} не найдена")
         
+        # Проверяем, является ли удаляемая величина видимой
+        visible = self.quantity_repo.get_visible_quantity(L, T)
+        is_visible = visible and visible == quantity
+        
         self.quantity_repo.remove(L, T, group_id)
         
         # Удаляем из видимых если была видимой
-        visible = self.quantity_repo.get_visible_quantity(L, T)
-        if visible and visible == quantity:
+        if is_visible:
             # Ищем альтернативную величину для отображения
             alternatives = self.get_alternatives_for_cell(L, T, group_id)
             if alternatives:
+                # Установка альтернативной величины как видимой сгенерирует событие обновления
                 self.quantity_repo.set_visible_quantity(L, T, alternatives[0])
             else:
+                # Удаление видимой величины сгенерирует событие удаления
                 self.quantity_repo.remove_visible_quantity(L, T)
     
     def get_alternatives_for_cell(self, L: int, T: int, exclude_group_id: str) -> List[PhysicalQuantity]:

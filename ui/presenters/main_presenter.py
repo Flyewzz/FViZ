@@ -3,6 +3,7 @@ from PyQt5.QtCore import QObject, pyqtSignal
 
 from core.use_cases.application_model import ApplicationModel
 from core.entities.physical_quantity import PhysicalQuantity
+from services.ui_update_service import UIUpdateService
 
 
 class MainPresenter(QObject):
@@ -16,9 +17,18 @@ class MainPresenter(QObject):
     parallelogram_should_be_drawn = pyqtSignal(list, str)  # quantities, color
     parallelogram_should_be_cleared = pyqtSignal()
     
-    def __init__(self, application_model: ApplicationModel):
+    def __init__(self, application_model: ApplicationModel, web_view=None):
         super().__init__()
         self.app_model = application_model
+        self.web_view = web_view
+        self.ui_update_service = None
+        
+        # Если передан web_view, инициализируем UI сервис
+        if web_view:
+            self.ui_update_service = UIUpdateService(web_view, self.app_model)
+            quantity_repository = self.app_model.quantity_manager.quantity_repo
+            self.ui_update_service.set_repository(quantity_repository)
+            self.ui_update_service.set_application_model(self.app_model)
     
     def get_visible_cells_for_display(self) -> Dict[Tuple[int, int], PhysicalQuantity]:
         """Получить видимые соты для отображения"""
@@ -46,7 +56,10 @@ class MainPresenter(QObject):
             )
             # Устанавливаем как видимую если это первая в данной позиции
             self.app_model.set_visible_quantity(L, T, quantity)
-            self.cell_created.emit(L, T, quantity)
+            # Если есть UI сервис, событие будет обработано автоматически
+            # Иначе отправляем сигнал для ручной обработки
+            if not self.ui_update_service:
+                self.cell_created.emit(L, T, quantity)
             return quantity
         except Exception as e:
             print(f"Ошибка создания физической величины: {e}")
@@ -62,7 +75,10 @@ class MainPresenter(QObject):
             )
             # Обновляем видимую величину
             self.app_model.set_visible_quantity(old_quantity.L, old_quantity.T, updated_quantity)
-            self.cell_updated.emit(old_quantity.L, old_quantity.T, updated_quantity)
+            # Если есть UI сервис, событие будет обработано автоматически
+            # Иначе отправляем сигнал для ручной обработки
+            if not self.ui_update_service:
+                self.cell_updated.emit(old_quantity.L, old_quantity.T, updated_quantity)
             return updated_quantity
         except Exception as e:
             print(f"Ошибка обновления физической величины: {e}")
@@ -92,7 +108,10 @@ class MainPresenter(QObject):
     def replace_visible_quantity(self, L: int, T: int, quantity: PhysicalQuantity):
         """Заменить видимую величину"""
         self.app_model.set_visible_quantity(L, T, quantity)
-        self.cell_updated.emit(L, T, quantity)
+        # Если есть UI сервис, событие будет обработано автоматически
+        # Иначе отправляем сигнал для ручной обработки
+        if not self.ui_update_service:
+            self.cell_updated.emit(L, T, quantity)
     
     def get_system_groups(self):
         """Получить системные группы"""

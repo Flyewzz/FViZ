@@ -49,13 +49,9 @@ class CellEditPresenter:
     
     def _update_field_after_dialog(self):
         """Обновить поле после закрытия диалога"""
-        from PyQt5.QtWidgets import QApplication
-        app = QApplication.instance()
-        main_window = app.activeWindow()
-        
-        if hasattr(main_window, 'controller'):
-            main_window.controller.send_all_cells_to_web_view()
-            print(f"🔄 Поле обновлено после {'создания' if self.create_mode else 'редактирования'} соты")
+        # Обновление уже произошло через систему событий в save_quantity
+        # Этот метод больше не нужен, так как события генерируются автоматически
+        print(f"✅ Поле обновлено через систему событий после {'создания' if self.create_mode else 'редактирования'} соты")
     
     def get_current_quantity(self) -> Optional[PhysicalQuantity]:
         """Получить текущую физическую величину"""
@@ -85,18 +81,11 @@ class CellEditPresenter:
                     name, symbol, unit, dimension, self.L, self.T, group_id
                 )
                 
-                # Устанавливаем как видимую
+                # Устанавливаем как видимую - событие будет сгенерировано автоматически
                 self.app_model.set_visible_quantity(self.L, self.T, quantity)
                 
                 print(f"✅ Создана новая сота: {name} в позиции ({self.L}, {self.T})")
-                
-                # Принудительно обновляем все соты через контроллер
-                from PyQt5.QtWidgets import QApplication
-                app = QApplication.instance()
-                main_window = app.activeWindow()
-                
-                if hasattr(main_window, 'controller'):
-                    main_window.controller.send_all_cells_to_web_view()
+                print("🎉 Событие 'quantity_created' будет обработано UIUpdateService")
                 
             else:
                 # Обновляем существующую
@@ -107,18 +96,11 @@ class CellEditPresenter:
                     self.current_quantity, name, symbol, unit, dimension, group_id
                 )
                 
-                # Обновляем видимую величину
+                # Обновляем видимую величину - событие будет сгенерировано автоматически
                 self.app_model.set_visible_quantity(self.L, self.T, updated_quantity)
                 
                 print(f"✅ Обновлена сота: {name} в позиции ({self.L}, {self.T})")
-                
-                # Принудительно обновляем все соты через контроллер
-                from PyQt5.QtWidgets import QApplication
-                app = QApplication.instance()
-                main_window = app.activeWindow()
-                
-                if hasattr(main_window, 'controller'):
-                    main_window.controller.send_all_cells_to_web_view()
+                print("🎉 Событие 'quantity_updated' будет обработано UIUpdateService")
             
             return True
             

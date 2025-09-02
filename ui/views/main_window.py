@@ -256,50 +256,21 @@ class MainWindow(QMainWindow):
     
     def on_cell_created(self, L, T, quantity):
         """Обработка создания новой соты"""
-        # Используем мост для создания соты
-        group = self.app_model.get_system_group_by_id(quantity.group_id)
-        cell_data = {
-            'L': L,
-            'T': T,
-            'name': quantity.name,
-            'symbol': quantity.symbol,
-            'value_c': quantity.unit,
-            'group': {
-                'name': group.name if group else "Неизвестная группа",
-                'color': group.color if group else "#73ecfa"
-            }
-        }
-        self.js_bridge.create_cell(cell_data)
-        
-        # Принудительно обновляем все соты для гарантии корректного отображения
-        self.presenter.handle_all_cells_request()
+        # UIUpdateService уже обработал событие создания через точечное обновление
+        # Не нужно вызывать полное обновление - это нарушает точечный подход
+        pass
     
     def on_cell_updated_by_presenter(self, L, T, quantity):
         """Обработка обновления соты презентером"""
-        # Используем мост для обновления соты
-        group = self.app_model.get_system_group_by_id(quantity.group_id)
-        cell_data = {
-            'L': L,
-            'T': T,
-            'name': quantity.name,
-            'symbol': quantity.symbol,
-            'value_c': quantity.unit,
-            'group': {
-                'name': group.name if group else "Неизвестная группа",
-                'color': group.color if group else "#73ecfa"
-            }
-        }
-        self.js_bridge.update_cell(cell_data)
-        
-        # Принудительно обновляем все соты для гарантии корректного отображения
-        self.presenter.handle_all_cells_request()
+        # UIUpdateService уже обработал событие обновления через точечное обновление
+        # Не нужно вызывать полное обновление - это нарушает точечный подход
+        pass
     
     def on_cell_removed(self, L, T):
         """Обработка удаления соты"""
-        self.js_bridge.remove_cell(L, T)
-        
-        # Принудительно обновляем все соты для гарантии корректного отображения
-        self.presenter.handle_all_cells_request()
+        # UIUpdateService уже обработал событие удаления через точечное обновление
+        # Не нужно вызывать полное обновление - это нарушает точечный подход
+        pass
     
     def draw_parallelogram(self, quantities, color=""):
         """Отрисовка параллелограмма"""
@@ -339,8 +310,8 @@ class MainWindow(QMainWindow):
         try:
             result = dialog.exec_()
             # После закрытия диалога обновляем отображение сот
-            if result == dialog.Accepted:
-                self.presenter.handle_all_cells_request()
+            # UIUpdateService автоматически обновит соты при изменении групп
+            pass
         finally:
             # Разблокируем операции с полем
             self._block_field_operations(False)
@@ -383,7 +354,8 @@ class MainWindow(QMainWindow):
             file_service.load_json_file(path, parent=self)
             
             # Обновляем отображение после загрузки
-            self.presenter.handle_all_cells_request()
+            # UIUpdateService автоматически обновит все соты при их создании
+            pass
     
     def save_json_dialog(self):
         """Сохранить JSON проект"""
@@ -485,5 +457,5 @@ class MainWindow(QMainWindow):
                 file_service.load_json_file(path, parent=self)
                 
                 # Обновляем отображение после загрузки
-                self.presenter.handle_all_cells_request()
+                # UIUpdateService автоматически обновит все соты при их создании
                 return

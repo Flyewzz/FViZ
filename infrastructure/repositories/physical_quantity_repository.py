@@ -12,6 +12,15 @@ class PhysicalQuantityRepositoryImpl(IPhysicalQuantityRepository):
         self._quantities_by_group: Dict[str, Dict[Tuple[int, int], PhysicalQuantity]] = {}
         # Хранение видимых величин
         self._visible_quantities: Dict[Tuple[int, int], PhysicalQuantity] = {}
+        # Система событий (последовательная обработка)
+        self._callbacks = {
+            'quantity_created': [],
+            'quantity_updated': [],
+            'quantity_replaced': [],
+            'quantity_deleted': []
+        }
+        self._event_queue = []
+        self._processing_events = False
     
     def save(self, quantity: PhysicalQuantity) -> None:
         """Сохранить физическую величину"""
@@ -85,7 +94,38 @@ class PhysicalQuantityRepositoryImpl(IPhysicalQuantityRepository):
     
     def set_visible_quantity(self, L: int, T: int, quantity: PhysicalQuantity) -> None:
         """Установить видимую величину"""
+        old_quantity = self._visible_quantities.get((L, T))
         self._visible_quantities[(L, T)] = quantity
+        
+        # Определяем тип операции на основе существующей логики
+        if old_quantity and quantity:
+            if old_quantity.group_id != quantity.group_id:
+                # Замена группы в тех же координатах
+                self._emit_event('quantity_replaced', {
+                    'L': L, 'T': T,
+                    'old_quantity': old_quantity,
+                    'new_quantity': quantity
+                })
+            else:
+                # Обновление свойств в той же группе
+                self._emit_event('quantity_updated', {
+                    'L': L, 'T': T,
+                    'old_quantity': old_quantity,
+                    'new_quantity': quantity
+                })
+        elif quantity:
+            # Создание новой видимой величины
+            self._emit_event('quantity_created', {
+                'L': L, 'T': T,
+                'quantity': quantity
+            })
+        else:
+            # Удаление видимой величины
+            self._emit_event('quantity_deleted', {
+                'L': L, 'T': T,
+                'quantity': old_quantity,
+                'group_name': old_quantity.group_id if old_quantity else None
+            })
     
     def get_visible_quantity(self, L: int, T: int) -> Optional[PhysicalQuantity]:
         """Получить видимую величину"""
@@ -97,9 +137,13 @@ class PhysicalQuantityRepositoryImpl(IPhysicalQuantityRepository):
     
     def remove_visible_quantity(self, L: int, T: int) -> None:
         """Удалить видимую величину"""
-        coords = (L, T)
-        if coords in self._visible_quantities:
-            del self._visible_quantities[coords]
+        if (L, T) in self._visible_quantities:
+            quantity = self._visible_quantities.pop((L, T))
+            self._emit_event('quantity_deleted', {
+                'L': L, 'T': T,
+                'quantity': quantity,
+                'group_name': quantity.group_id if quantity else None
+            })
     
     def clear_all(self) -> None:
         """Очистить все данные"""
@@ -152,3 +196,28 @@ class PhysicalQuantityRepositoryImpl(IPhysicalQuantityRepository):
     def delete(self, id: str) -> None:
         """Удалить физическую величину по ID - не поддерживается в текущей реализации"""
         raise NotImplementedError("Delete by ID is not supported. Use delete(L, T, group_id) instead.")
+    
+    # === Система событий для UI обновлений ===
+    
+    def add_callback(self, event_type: str, callback):
+        """Добавить обработчик события"""
+        if event_type in self._callbacks:
+            self._callbacks[event_type].append(callback)
+    
+    def _emit_event(self, event_type: str, data):
+        """Добавить событие в очередь для последовательной обработки"""
+        self._event_queue.append((event_type, data))
+        if not self._processing_events:
+            self._process_events()
+    
+    def _process_events(self):
+        """Последовательно обрабатывает все события из очереди"""
+        self._processing_events = True
+        while self._event_queue:
+            event_type, data = self._event_queue.pop(0)
+            for callback in self._callbacks.get(event_type, []):
+                try:
+                    callback(data)
+                except Exception as e:
+                    print(f"Ошибка в обработчике события {event_type}: {e}")
+        self._processing_events = False

@@ -258,9 +258,12 @@ class SystemGroupsDialog(QDialog):
             self.load_groups()
             QMessageBox.information(self, "Успех", f"Группа '{group.name}' успешно удалена.")
             
-            # Обновляем отображение на поле
-            if hasattr(self.parent(), 'presenter') and self.parent().presenter:
-                self.parent().presenter.handle_all_cells_request()
+            # Обновляем отображение на поле - только затронутые соты
+            if hasattr(self.parent(), 'app_model') and hasattr(self.parent(), 'web_view'):
+                # Получаем все видимые соты и обновляем только те, что принадлежат удаленной группе
+                # Но так как группа удалена, все соты из нее уже удалены через каскадное удаление
+                # UIUpdateService должен был обработать удаление автоматически
+                pass
             
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось удалить группу: {e}")

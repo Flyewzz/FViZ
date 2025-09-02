@@ -6,6 +6,7 @@ import base64
 
 from core.use_cases.application_model import ApplicationModel
 from core.entities.physical_quantity import PhysicalQuantity
+from services.ui_update_service import UIUpdateService
 
 
 class MainController(QObject):
@@ -21,6 +22,14 @@ class MainController(QObject):
         super().__init__()
         self.app_model = application_model
         self.web_view = web_view
+        
+        # Создаем сервис для точечных обновлений UI
+        self.ui_update_service = UIUpdateService(web_view, self.app_model)
+        
+        # Получаем репозиторий из ApplicationModel и подключаем UI сервис
+        quantity_repository = self.app_model.quantity_manager.quantity_repo
+        self.ui_update_service.set_repository(quantity_repository)
+        self.ui_update_service.set_application_model(self.app_model)
     
     # === Обработка взаимодействий с сотами ===
     
@@ -165,8 +174,7 @@ class MainController(QObject):
         self.parallelogram_cleared.emit()
         
         self.app_model.set_visible_quantity(L, T, quantity)
-        # Принудительно отправляем сигнал о том, что все соты нужно обновить
-        self.send_all_cells_to_web_view()
+        # Событие будет обработано UIUpdateService автоматически
         self._suppress_next_click()
     
     def _edit_and_suppress(self, L: int, T: int):
@@ -205,8 +213,7 @@ class MainController(QObject):
                 self.app_model.delete_cell_cascade(L, T, group_id)
                 print(f"✅ Удалена сота в позиции ({L}, {T}) из группы {group_name} с каскадным удалением зависимостей")
                 
-                # Принудительно отправляем сигнал о том, что все соты нужно обновить
-                self.send_all_cells_to_web_view()
+                # Событие удаления будет обработано UIUpdateService автоматически
             except ValueError as e:
                 print(f"Ошибка каскадного удаления: {e}")
                 # Не прерываем выполнение, просто логируем ошибку

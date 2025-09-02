@@ -13,8 +13,6 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        super().__init__()
-
         self.setWindowTitle("FViZ 2.0")
         self.setGeometry(100, 100, 2000, 1400)
 
