@@ -17,6 +17,11 @@ class ILawRepository(ABC):
         pass
     
     @abstractmethod
+    def get_laws_by_variable(self, variable_name: str) -> List[Law]:
+        """Найти все законы, использующие конкретную переменную"""
+        pass
+    
+    @abstractmethod
     def add_law(self, law: Law) -> None:
         """Добавить закон"""
         pass

@@ -1,5 +1,5 @@
-from typing import List, Dict, Tuple
-from core.entities import PhysicalQuantity, SystemGroup
+from typing import List, Dict, Tuple, Set
+from core.entities import PhysicalQuantity, SystemGroup, Law
 from core.use_cases.physical_quantity_manager import PhysicalQuantityManager
 from core.use_cases.system_group_manager import SystemGroupManager
 from core.use_cases.law_manager import LawManager, LawGroupManager, ParallelogramLogic
@@ -202,3 +202,403 @@ class ApplicationModel:
         self.law_manager.law_repo.clear_all()
         self.law_group_manager.law_group_repo.clear_all()
         self._selected_quantities.clear()
+    
+    # === Методы проверки зависимостей ===
+    
+    def check_quantity_dependencies(self, quantity_name: str) -> List[Law]:
+        """Проверить, какие законы используют физическую величину по имени"""
+        return self.law_manager.law_repo.get_laws_by_variable(quantity_name)
+    
+    def check_quantity_dependencies_by_entity(self, quantity: PhysicalQuantity) -> List[Law]:
+        """Проверить, какие законы используют физическую величину по сущности"""
+        return self.check_quantity_dependencies(quantity.name)
+    
+    def check_group_dependencies(self, group_id: str) -> Dict[str, List]:
+        """Проверить зависимости системной группы"""
+        dependencies = {
+            'quantities': [],
+            'laws': [],
+            'orphan_laws': []
+        }
+        
+        # Получаем все физические величины в группе
+        quantities_in_group = self.quantity_manager.quantity_repo.get_by_group(group_id)
+        dependencies['quantities'] = quantities_in_group
+        
+        # Проверяем законы, использующие эти величины
+        all_laws = []
+        for quantity in quantities_in_group:
+            laws = self.check_quantity_dependencies(quantity.name)
+            all_laws.extend(laws)
+        
+        # Убираем дубликаты по ID закона
+        unique_laws = []
+        seen_ids = set()
+        for law in all_laws:
+            if law.id not in seen_ids:
+                unique_laws.append(law)
+                seen_ids.add(law.id)
+        
+        dependencies['laws'] = unique_laws
+        
+        
+        return dependencies
+    
+    def check_cell_dependencies(self, L: int, T: int, group_id: str) -> Dict:
+        """Проверить зависимости конкретной соты"""
+        dependencies = {
+            'quantity': None,
+            'laws': [],
+            'is_empty': True
+        }
+        
+        # Получаем физическую величину в соте
+        quantity = self.quantity_manager.get_quantity_at_position(L, T, group_id)
+        
+        if quantity:
+            dependencies['quantity'] = quantity
+            dependencies['is_empty'] = False
+            
+            # Проверяем законы, использующие эту величину
+            laws = self.check_quantity_dependencies(quantity.name)
+            dependencies['laws'] = laws
+            
+        
+        return dependencies
+    
+    def check_law_dependencies(self, law: Law) -> Dict[str, List]:
+        """Проверить зависимости закона"""
+        dependencies = {
+            'quantities': [],
+            'related_laws': []
+        }
+        
+        # Получаем физические величины, используемые в законе
+        for var_name in law.variables:
+            quantity = self.quantity_manager.quantity_repo.get_by_name(var_name)
+            if quantity:
+                dependencies['quantities'].append(quantity)
+        
+        # Проверяем, есть ли другие законы, использующие те же величины
+        for quantity in dependencies['quantities']:
+            related_laws = self.check_quantity_dependencies(quantity.name)
+            for related_law in related_laws:
+                if related_law != law:
+                    dependencies['related_laws'].append(related_law)
+        
+        # Убираем дубликаты
+        dependencies['related_laws'] = list(set(dependencies['related_laws']))
+        
+        
+        return dependencies
+    
+    # def check_cyclic_dependencies(self) -> List[List[Law]]:
+    #     """Проверить циклические зависимости между законами"""
+    #     cyclic_dependencies = []
+    #     all_laws = self.law_manager.law_repo.get_all_laws()
+        
+    #     # Строим граф зависимостей
+    #     graph = {}
+    #     for law in all_laws:
+    #         graph[law.id] = []
+        
+    #     # Заполняем граф: закон А зависит от закона Б, если А использует величины из Б
+    #     for law in all_laws:
+    #         for other_law in all_laws:
+    #             if law != other_law:
+    #                 # Проверяем, использует ли закон А величины, которые есть в законе Б
+    #                 law_vars = set(law.variables)
+    #                 other_vars = set(other_law.variables)
+                    
+    #                 # Если есть пересечение переменных, считаем, что законы связаны
+    #                 if law_vars & other_vars:
+    #                     graph[law.id].append(other_law.id)
+        
+    #     # Поиск циклов с помощью DFS
+    #     visited = set()
+    #     recursion_stack = set()
+        
+    #     def dfs(law, path):
+    #         visited.add(law)
+    #         recursion_stack.add(law)
+    #         path.append(law)
+            
+    #         for neighbor in graph[law]:
+    #             if neighbor not in visited:
+    #                 if dfs(neighbor, path):
+    #                     return True
+    #             elif neighbor in recursion_stack:
+    #                 # Найден цикл
+    #                 cycle_start = path.index(neighbor)
+    #                 cycle = path[cycle_start:] + [neighbor]
+    #                 cyclic_dependencies.append(cycle)
+    #                 return True
+            
+    #         recursion_stack.remove(law)
+    #         path.pop()
+    #         return False
+        
+    #     for law in all_laws:
+    #         if law not in visited:
+    #             dfs(law, [])
+        
+    #     return cyclic_dependencies
+    
+    def detect_orphan_laws(self) -> List[Law]:
+        """Обнаружить "осиротевшие" законы - законы, ссылающиеся на несуществующие величины"""
+        orphan_laws = []
+        all_laws = self.law_manager.law_repo.get_all_laws()
+        
+        for law in all_laws:
+            is_orphan = False
+            for var_name in law.variables:
+                quantity = self.quantity_manager.quantity_repo.get_by_name(var_name)
+                if not quantity:
+                    is_orphan = True
+                    break
+            
+            if is_orphan:
+                orphan_laws.append(law)
+        
+        return orphan_laws
+    
+    # === Каскадные методы удаления ===
+    
+    def delete_cell_cascade(self, L: int, T: int, group_id: str) -> Dict:
+        """Удалить соту с каскадным удалением связанных законов
+        
+        Args:
+            L: Координата L
+            T: Координата T
+            group_id: ID системной группы
+            
+        Returns:
+            Dict: Результат операции с информацией об удаленных объектах
+        """
+        result = {
+            'action': 'delete_cell',
+            'coordinates': (L, T),
+            'group_id': group_id,
+            'deleted_quantity': None,
+            'deleted_laws': [],
+            'success': True,
+            'error': None
+        }
+        
+        try:
+            # Проверяем существование группы
+            group = self.system_group_manager.get_group_by_id(group_id)
+            if not group:
+                raise ValueError(f'Системная группа с ID "{group_id}" не существует')
+            
+            # Проверяем зависимости
+            dependencies = self.check_cell_dependencies(L, T, group_id)
+            
+            if dependencies['is_empty']:
+                # Пустая сота - проверяем, есть ли запись для удаления
+                try:
+                    self.quantity_manager.delete_quantity(L, T, group_id)
+                    result['message'] = 'Пустая сота успешно удалена'
+                except ValueError:
+                    # Записи не было - просто считаем, что сота удалена
+                    result['message'] = 'Пустая сота успешно удалена (не было записи)'
+            else:
+                # Сота содержит физическую величину
+                quantity = dependencies['quantity']
+                
+                # Удаляем связанные законы
+                if dependencies['laws']:
+                    for law in dependencies['laws']:
+                        self.law_manager.law_repo.remove_law(law)
+                        result['deleted_laws'].append({
+                            'id': law.id,
+                            'name': law.name,
+                            'variables': law.variables
+                        })
+                
+                # Удаляем физическую величину
+                self.quantity_manager.delete_quantity(L, T, group_id)
+                result['deleted_quantity'] = {
+                    'name': quantity.name,
+                    'coordinates': (quantity.L, quantity.T),
+                    'group_id': quantity.group_id
+                }
+                
+                if dependencies['laws']:
+                    result['message'] = f'Удалена величина "{quantity.name}" и {len(dependencies["laws"])} законов'
+                else:
+                    result['message'] = f'Удалена величина "{quantity.name}"'
+            
+        except Exception as e:
+            result['success'] = False
+            result['error'] = str(e)
+            result['message'] = f'Ошибка при удалении соты: {e}'
+        
+        return result
+    
+    def delete_quantity_cascade(self, quantity_name: str) -> Dict:
+        """Удалить физическую величину по имени с каскадным удалением законов
+        
+        Args:
+            quantity_name: Имя физической величины
+            
+        Returns:
+            Dict: Результат операции с информацией об удаленных объектах
+        """
+        result = {
+            'action': 'delete_quantity',
+            'quantity_name': quantity_name,
+            'deleted_quantities': [],
+            'deleted_laws': [],
+            'success': True,
+            'error': None
+        }
+        
+        try:
+            # Находим все физические величины с таким именем (в разных группах)
+            all_quantities = self.quantity_manager.quantity_repo.get_all()
+            quantities_to_delete = [q for q in all_quantities if q.name == quantity_name]
+            
+            if not quantities_to_delete:
+                raise ValueError(f'Физическая величина с именем "{quantity_name}" не найдена')
+            
+            # Проверяем зависимости
+            laws_to_delete = self.check_quantity_dependencies(quantity_name)
+            
+            # Удаляем законы, использующие эту величину
+            for law in laws_to_delete:
+                self.law_manager.law_repo.remove_law(law)
+                result['deleted_laws'].append({
+                    'id': law.id,
+                    'name': law.name,
+                    'variables': law.variables
+                })
+            
+            # Удаляем все физические величины с таким именем
+            for quantity in quantities_to_delete:
+                self.quantity_manager.delete_quantity(quantity.L, quantity.T, quantity.group_id)
+                result['deleted_quantities'].append({
+                    'name': quantity.name,
+                    'coordinates': (quantity.L, quantity.T),
+                    'group_id': quantity.group_id
+                })
+            
+            result['message'] = f'Удалено {len(quantities_to_delete)} величин(ы) и {len(laws_to_delete)} законов'
+            
+        except Exception as e:
+            result['success'] = False
+            result['error'] = str(e)
+            result['message'] = f'Ошибка при удалении величины: {e}'
+        
+        return result
+    
+    def delete_system_group_cascade(self, group_id: str) -> Dict:
+        """Удалить системную группу с каскадным удалением связанных ФВ и законов
+        
+        Args:
+            group_id: ID системной группы
+            
+        Returns:
+            Dict: Результат операции с информацией об удаленных объектах
+        """
+        result = {
+            'action': 'delete_system_group',
+            'group_id': group_id,
+            'deleted_quantities': [],
+            'deleted_laws': [],
+            'success': True,
+            'error': None
+        }
+        
+        try:
+            # Проверяем зависимости
+            dependencies = self.check_group_dependencies(group_id)
+            
+            if not dependencies['quantities']:
+                # В группе нет величин - просто удаляем группу
+                self.system_group_manager.delete_group(group_id)
+                result['message'] = 'Пустая системная группа успешно удалена'
+            else:
+                # Удаляем связанные законы
+                for law in dependencies['laws']:
+                    self.law_manager.law_repo.remove_law(law)
+                    result['deleted_laws'].append({
+                        'id': law.id,
+                        'name': law.name,
+                        'variables': law.variables
+                    })
+                
+                # Удаляем все физические величины в группе
+                for quantity in dependencies['quantities']:
+                    self.quantity_manager.delete_quantity(quantity.L, quantity.T, quantity.group_id)
+                    result['deleted_quantities'].append({
+                        'name': quantity.name,
+                        'coordinates': (quantity.L, quantity.T),
+                        'group_id': quantity.group_id
+                    })
+                
+                # Удаляем саму группу
+                self.system_group_manager.delete_group(group_id)
+                
+                result['message'] = (f'Удалена системная группа "{group_id}" с '
+                                   f'{len(dependencies["quantities"])} величинами и '
+                                   f'{len(dependencies["laws"])} законами')
+            
+        except Exception as e:
+            result['success'] = False
+            result['error'] = str(e)
+            result['message'] = f'Ошибка при удалении системной группы: {e}'
+        
+        return result
+    
+    def delete_law_cascade(self, law_id: str) -> Dict:
+        """Удалить закон с проверкой зависимостей
+        
+        Args:
+            law_id: ID закона
+            
+        Returns:
+            Dict: Результат операции
+        """
+        result = {
+            'action': 'delete_law',
+            'law_id': law_id,
+            'deleted_law': None,
+            'success': True,
+            'error': None
+        }
+        
+        try:
+            # Находим закон
+            all_laws = self.law_manager.law_repo.get_all_laws()
+            law_to_delete = None
+            
+            for law in all_laws:
+                if law.id == law_id:
+                    law_to_delete = law
+                    break
+            
+            if not law_to_delete:
+                raise ValueError(f'Закон с ID "{law_id}" не найден')
+            
+            # Проверяем зависимости
+            dependencies = self.check_law_dependencies(law_to_delete)
+            
+            # Удаляем закон
+            self.law_manager.law_repo.remove_law(law_to_delete)
+            
+            result['deleted_law'] = {
+                'id': law_to_delete.id,
+                'name': law_to_delete.name,
+                'variables': law_to_delete.variables
+            }
+            
+            result['message'] = f'Закон "{law_to_delete.name}" успешно удален'
+            
+        except Exception as e:
+            result['success'] = False
+            result['error'] = str(e)
+            result['message'] = f'Ошибка при удалении закона: {e}'
+        
+        return result
+    

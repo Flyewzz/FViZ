@@ -540,6 +540,12 @@
 
         // Добавляем поддержку колесика мыши для масштабирования
         document.getElementById('root').addEventListener('wheel', (e) => {
+            // Проверяем, не нажата ли правая кнопка мыши
+            if (e.buttons === 2) {
+                // Если правая кнопка нажата, не блокируем колесо и не масштабируем
+                return;
+            }
+            
             e.preventDefault();
             
             const scaleBy = 1.05;

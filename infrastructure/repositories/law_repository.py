@@ -136,6 +136,14 @@ class LawRepositoryImpl(ILawRepository):
         laws = self.find_laws_by_variables(variable_names)
         return laws[0] if laws else None
     
+    def get_laws_by_variable(self, variable_name: str) -> List[Law]:
+        """Найти все законы, использующие конкретную переменную"""
+        result = []
+        for law in self._laws.values():
+            if variable_name in law.variables:
+                result.append(law)
+        return result
+    
     def add_law(self, law: Law) -> None:
         """Добавить закон"""
         self.save_law(law)
