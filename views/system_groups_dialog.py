@@ -246,26 +246,10 @@ class SystemGroupsDialog(QDialog):
             return
         
         try:
-            # Удаляем через модель приложения если доступна
+            # Удаляем через модель приложения с каскадным удалением
             if hasattr(self.parent(), 'app_model'):
-                # Сначала удаляем все физические величины этой группы
-                all_quantities = self.parent().app_model.get_all_quantities()
-                quantities_to_delete = []
-                
-                for (L, T), quantities_list in all_quantities.items():
-                    for quantity in quantities_list:
-                        if quantity.group_id == group.id:
-                            quantities_to_delete.append((L, T, group.id))
-                
-                # Удаляем физические величины
-                for L, T, group_id in quantities_to_delete:
-                    try:
-                        self.parent().app_model.delete_physical_quantity(L, T, group_id)
-                    except Exception as e:
-                        print(f"Ошибка удаления физической величины: {e}")
-                
-                # Удаляем саму группу
-                self.parent().app_model.system_group_manager.delete_group(group.id)
+                # Используем каскадное удаление группы
+                self.parent().app_model.delete_system_group_cascade(group.id)
                 self.groups = self.parent().app_model.get_all_system_groups()
             else:
                 # Fallback для старой архитектуры

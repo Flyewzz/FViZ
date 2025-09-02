@@ -190,7 +190,7 @@ class MainController(QObject):
         self._suppress_next_click()
     
     def _delete_and_suppress(self, L: int, T: int, group_name: str):
-        """Удалить сотку и подавить следующий клик"""
+        """Удалить соту и подавить следующий клик с каскадным удалением"""
         # Найдем группу по имени
         groups = self.app_model.get_all_system_groups()
         group_id = None
@@ -201,13 +201,14 @@ class MainController(QObject):
         
         if group_id:
             try:
-                self.app_model.delete_physical_quantity(L, T, group_id)
-                print(f"✅ Удалена сота в позиции ({L}, {T}) из группы {group_name}")
+                # Используем каскадное удаление
+                self.app_model.delete_cell_cascade(L, T, group_id)
+                print(f"✅ Удалена сота в позиции ({L}, {T}) из группы {group_name} с каскадным удалением зависимостей")
                 
                 # Принудительно отправляем сигнал о том, что все соты нужно обновить
                 self.send_all_cells_to_web_view()
             except ValueError as e:
-                print(f"Ошибка удаления: {e}")
+                print(f"Ошибка каскадного удаления: {e}")
                 # Не прерываем выполнение, просто логируем ошибку
         else:
             print(f"❌ Группа {group_name} не найдена")

@@ -240,10 +240,10 @@ class LawDialog(QDialog):
             return
         
         try:
-            # Удаляем через backend/модель приложения
+            # Удаляем через backend/модель приложения с каскадным удалением
             if hasattr(self.backend, 'app_model'):
-                # Используем новую архитектуру
-                self.backend.app_model.law_manager.law_repo.remove_law(self.editing_law)
+                # Используем новую архитектуру с каскадным удалением
+                self.backend.app_model.delete_law_cascade(self.editing_law)
                 QMessageBox.information(self, "✅", "Закон удален!")
             else:
                 # Fallback для старой архитектуры

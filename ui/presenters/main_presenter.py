@@ -69,9 +69,9 @@ class MainPresenter(QObject):
             return None
     
     def delete_physical_quantity(self, L: int, T: int, group_id: str):
-        """Удалить физическую величину"""
+        """Удалить физическую величину с каскадным удалением"""
         try:
-            self.app_model.delete_physical_quantity(L, T, group_id)
+            self.app_model.delete_cell_cascade(L, T, group_id)
             
             # Проверяем, есть ли альтернативные величины в этой позиции
             all_groups = self.app_model.get_all_system_groups()
