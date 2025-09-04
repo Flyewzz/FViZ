@@ -95,3 +95,18 @@ class UIUpdateService:
         self.web_view.page().runJavaScript(
             f"field.removeCell({L}, {T}, '{group_name}');"
         )
+    
+    def draw_parallelogram(self, quantities, color=None):
+        """Отрисовать параллелограмм на холсте"""
+        js_array = "[" + ", ".join(
+            f"{{L: {q.L}, T: {q.T}}}" for q in quantities
+        ) + "]"
+
+        if color:
+            self.web_view.page().runJavaScript(f"field.drawParallelogram({js_array}, '{color}');")
+        else:
+            self.web_view.page().runJavaScript(f"field.drawParallelogram({js_array});")
+    
+    def clear_parallelogram(self):
+        """Очистить параллелограмм с холста"""
+        self.web_view.page().runJavaScript("field.clearParallelogram();")

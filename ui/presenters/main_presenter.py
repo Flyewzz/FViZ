@@ -29,6 +29,10 @@ class MainPresenter(QObject):
             quantity_repository = self.app_model.quantity_manager.quantity_repo
             self.ui_update_service.set_repository(quantity_repository)
             self.ui_update_service.set_application_model(self.app_model)
+            
+            # Подключаем сигналы параллелограмма
+            self.controller.parallelogram_drawn.connect(self.ui_update_service.draw_parallelogram)
+            self.controller.parallelogram_cleared.connect(self.ui_update_service.clear_parallelogram)
     
     def get_visible_cells_for_display(self) -> Dict[Tuple[int, int], PhysicalQuantity]:
         """Получить видимые соты для отображения"""

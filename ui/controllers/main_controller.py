@@ -30,12 +30,20 @@ class MainController(QObject):
         quantity_repository = self.app_model.quantity_manager.quantity_repo
         self.ui_update_service.set_repository(quantity_repository)
         self.ui_update_service.set_application_model(self.app_model)
+        
+        # Подключаем сигналы параллелограмма
+        self.parallelogram_drawn.connect(self.ui_update_service.draw_parallelogram)
+        self.parallelogram_cleared.connect(self.ui_update_service.clear_parallelogram)
     
     # === Обработка взаимодействий с сотами ===
     
     @pyqtSlot(str)
     def handle_cell_click(self, cell_data: str):
         """Обработка клика по соте"""
+        # Очищаем выделение при любом клике по полю
+        self.app_model.clear_selection()
+        self.parallelogram_cleared.emit()
+        
         print(f"Клик по соте: {cell_data}")
         self.cell_updated.emit(f"Выбрана сота {cell_data}")
     
@@ -97,7 +105,8 @@ class MainController(QObject):
         if not quantity:
             return
         
-        # Переключаем выделение
+        # Переключаем выделение только для текущей соты
+        # Не очищаем выделение у всех сот - это нарушает пользовательский опыт
         self.app_model.toggle_quantity_selection(quantity)
         
         # Проверяем параллелограмм
@@ -179,6 +188,10 @@ class MainController(QObject):
     
     def _edit_and_suppress(self, L: int, T: int):
         """Редактировать сотку и подавить следующий клик"""
+        # Очищаем выделение перед редактированием
+        self.app_model.clear_selection()
+        self.parallelogram_cleared.emit()
+        
         from ui.presenters.cell_edit_presenter import CellEditPresenter
         app = QApplication.instance()
         main_window = app.activeWindow()
@@ -199,6 +212,10 @@ class MainController(QObject):
     
     def _delete_and_suppress(self, L: int, T: int, group_name: str):
         """Удалить соту и подавить следующий клик с каскадным удалением"""
+        # Очищаем выделение перед удалением
+        self.app_model.clear_selection()
+        self.parallelogram_cleared.emit()
+        
         # Найдем группу по имени
         groups = self.app_model.get_all_system_groups()
         group_id = None
@@ -224,6 +241,10 @@ class MainController(QObject):
     
     def _create_and_suppress(self, L: int, T: int, used_groups: List):
         """Создать сотку и подавить следующий клик"""
+        # Очищаем выделение перед созданием
+        self.app_model.clear_selection()
+        self.parallelogram_cleared.emit()
+        
         from ui.presenters.cell_edit_presenter import CellEditPresenter
         app = QApplication.instance()
         main_window = app.activeWindow()
@@ -234,8 +255,8 @@ class MainController(QObject):
         
         try:
             presenter = CellEditPresenter(
-                self.app_model, L, T, 
-                create_mode=True, 
+                self.app_model, L, T,
+                create_mode=True,
                 exclude_groups=used_groups,
                 parent=main_window
             )
@@ -267,6 +288,9 @@ class MainController(QObject):
     
     def _open_law_dialog(self, quantities: List[PhysicalQuantity], existing_law=None):
         """Открыть диалог закона"""
+        # НЕ очищаем выделение и параллелограмм при открытии диалога закона
+        # Они должны оставаться видимыми для пользователя
+        
         from ui.presenters.law_dialog_presenter import LawDialogPresenter
         app = QApplication.instance()
         main_window = app.activeWindow()
@@ -277,7 +301,7 @@ class MainController(QObject):
         
         try:
             presenter = LawDialogPresenter(
-                self.app_model, quantities, existing_law, 
+                self.app_model, quantities, existing_law,
                 parent=main_window
             )
             presenter.show()
