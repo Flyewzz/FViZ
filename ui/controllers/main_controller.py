@@ -5,6 +5,7 @@ from PyQt5.QtGui import QImage
 import base64
 
 from core.use_cases.application_model import ApplicationModel
+from core.use_cases.application_model_with_commands import ApplicationModelWithCommands
 from core.entities.physical_quantity import PhysicalQuantity
 from services.ui_update_service import UIUpdateService
 
@@ -18,9 +19,27 @@ class MainController(QObject):
     parallelogram_cleared = pyqtSignal()
     all_cells_requested = pyqtSignal()
     
+    # Сигналы для управления состоянием undo/redo
+    can_undo_changed = pyqtSignal()
+    can_redo_changed = pyqtSignal()
+    
     def __init__(self, application_model: ApplicationModel, web_view):
         super().__init__()
-        self.app_model = application_model
+        # Проверяем, является ли модель моделью с поддержкой команд
+        if isinstance(application_model, ApplicationModelWithCommands):
+            self.app_model = application_model
+            self.commands_enabled = True
+        else:
+            # Если нет, создаем обертку с поддержкой команд
+            self.app_model = ApplicationModelWithCommands(
+                quantity_manager=application_model.quantity_manager,
+                system_group_manager=application_model.system_group_manager,
+                law_manager=application_model.law_manager,
+                law_group_manager=application_model.law_group_manager,
+                parallelogram_logic=application_model.parallelogram_logic
+            )
+            self.commands_enabled = False
+        
         self.web_view = web_view
         
         # Создаем сервис для точечных обновлений UI
@@ -226,9 +245,20 @@ class MainController(QObject):
         
         if group_id:
             try:
-                # Используем каскадное удаление
-                self.app_model.delete_cell_cascade(L, T, group_id)
-                print(f"✅ Удалена сота в позиции ({L}, {T}) из группы {group_name} с каскадным удалением зависимостей")
+                # Используем каскадное удаление с поддержкой команд
+                if self.commands_enabled:
+                    # Удаляем с поддержкой отмены/повтора
+                    success = self.app_model.delete_physical_quantity_with_command(L, T, group_id)
+                    if success:
+                        print(f"✅ Удалена сота в позиции ({L}, {T}) из группы {group_name} с каскадным удалением зависимостей (с поддержкой отмены)")
+                        # Уведомляем об изменении состояния undo/redo
+                        self._notify_state_changed()
+                    else:
+                        print(f"❌ Не удалось удалить соту в позиции ({L}, {T}) из группы {group_name}")
+                else:
+                    # Удаляем без поддержки команд (старый режим)
+                    self.app_model.delete_cell_cascade(L, T, group_id)
+                    print(f"✅ Удалена сота в позиции ({L}, {T}) из группы {group_name} с каскадным удалением зависимостей")
                 
                 # Событие удаления будет обработано UIUpdateService автоматически
             except ValueError as e:
@@ -313,3 +343,63 @@ class MainController(QObject):
     def _suppress_next_click(self):
         """Подавить следующий клик в WebView"""
         self.web_view.page().runJavaScript("window.suppressNextClick = true;")
+    
+    def _notify_state_changed(self):
+        """Уведомить об изменении состояния undo/redo"""
+        print(f"🔔 Уведомление об изменении состояния. Can undo: {self.app_model.can_undo()}, Can redo: {self.app_model.can_redo()}")
+        self.can_undo_changed.emit()
+        self.can_redo_changed.emit()
+    
+    def can_undo(self):
+        """Проверить возможность отмены"""
+        if self.commands_enabled:
+            return self.app_model.can_undo()
+        return False
+    
+    def can_redo(self):
+        """Проверить возможность повтора"""
+        if self.commands_enabled:
+            return self.app_model.can_redo()
+        return False
+    
+    def get_undo_description(self):
+        """Получить описание действия для отмены"""
+        if self.commands_enabled:
+            return self.app_model.get_undo_description()
+        return ""
+    
+    def get_redo_description(self):
+        """Получить описание действия для повтора"""
+        if self.commands_enabled:
+            return self.app_model.get_redo_description()
+        return ""
+    
+    def undo_last_action(self):
+        """Выполнить отмену последнего действия"""
+        if self.commands_enabled:
+            print(f"🔄 Попытка отмены действия. Can undo: {self.app_model.can_undo()}, Can redo: {self.app_model.can_redo()}")
+            success = self.app_model.undo_last_action()
+            if success:
+                print("✅ Действие успешно отменено")
+                print(f"🔄 После отмены. Can undo: {self.app_model.can_undo()}, Can redo: {self.app_model.can_redo()}")
+                # Уведомляем об изменении состояния undo/redo
+                self._notify_state_changed()
+            else:
+                print("❌ Не удалось отменить действие")
+            return success
+        return False
+    
+    def redo_last_action(self):
+        """Выполнить повтор последнего действия"""
+        if self.commands_enabled:
+            print(f"🔄 Попытка повтора действия. Can undo: {self.app_model.can_undo()}, Can redo: {self.app_model.can_redo()}")
+            success = self.app_model.redo_last_action()
+            if success:
+                print("✅ Действие успешно повторено")
+                print(f"🔄 После повтора. Can undo: {self.app_model.can_undo()}, Can redo: {self.app_model.can_redo()}")
+                # Уведомляем об изменении состояния undo/redo
+                self._notify_state_changed()
+            else:
+                print("❌ Не удалось повторить действие")
+            return success
+        return False

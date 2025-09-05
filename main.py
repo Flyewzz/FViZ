@@ -9,7 +9,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     
     # Создаем главную модель приложения через фабрику
-    application_model = ApplicationFactory.create_application_model()
+    application_model = ApplicationFactory.create_application_model_with_commands()
     
     # Настраиваем начальные данные
     ApplicationFactory.setup_default_data(application_model)

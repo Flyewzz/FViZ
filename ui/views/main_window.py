@@ -154,11 +154,23 @@ class MainWindow(QMainWindow):
         
         undo_action = QAction("Отменить", self)
         undo_action.setShortcut(QKeySequence.Undo)
+        undo_action.triggered.connect(self.controller.undo_last_action)
+        undo_action.setEnabled(False)  # Изначально неактивна
         
         redo_action = QAction("Повторить", self)
         redo_action.setShortcut(QKeySequence.Redo)
+        redo_action.triggered.connect(self.controller.redo_last_action)
+        redo_action.setEnabled(False)  # Изначально неактивна
         
         edit_menu.addActions([undo_action, redo_action])
+        
+        # Сохраняем ссылки на действия для обновления состояния
+        self.undo_action = undo_action
+        self.redo_action = redo_action
+        
+        # Подключаем сигналы для обновления состояния меню
+        self.controller.can_undo_changed.connect(self._update_undo_redo_state)
+        self.controller.can_redo_changed.connect(self._update_undo_redo_state)
         
         # Вид
         view_menu = menu_bar.addMenu("Вид")
@@ -412,6 +424,31 @@ class MainWindow(QMainWindow):
                 field.setZoom(updated);
             })();
         """ % factor)
+    
+    def _update_undo_redo_state(self):
+        """Обновить состояние пунктов меню отмены/повтора"""
+        if hasattr(self, 'undo_action') and hasattr(self, 'redo_action'):
+            # Проверяем возможность отмены/повтора через контроллер
+            can_undo = self.controller.can_undo()
+            can_redo = self.controller.can_redo()
+            
+            print(f"🔄 Обновление состояния меню. Can undo: {can_undo}, Can redo: {can_redo}")
+            
+            self.undo_action.setEnabled(can_undo)
+            self.redo_action.setEnabled(can_redo)
+            
+            # Обновляем текст с описанием действий
+            if can_undo:
+                undo_desc = self.controller.get_undo_description()
+                self.undo_action.setText(f"Отменить: {undo_desc}" if undo_desc else "Отменить")
+            else:
+                self.undo_action.setText("Отменить")
+            
+            if can_redo:
+                redo_desc = self.controller.get_redo_description()
+                self.redo_action.setText(f"Повторить: {redo_desc}" if redo_desc else "Повторить")
+            else:
+                self.redo_action.setText("Повторить")
     
     def show_about(self):
         """Показать информацию о программе"""
