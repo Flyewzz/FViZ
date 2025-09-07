@@ -22,6 +22,10 @@ class CommandHistory:
         # Очищаем redo стек при добавлении новой команды
         self.redo_stack.clear()
     
+    def push_command(self, command: Command) -> None:
+        """Добавить команду в историю (псевдоним для add_command)"""
+        self.add_command(command)
+    
     def undo(self) -> bool:
         """Отменить последнюю команду"""
         if not self.undo_stack:

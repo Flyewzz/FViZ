@@ -72,7 +72,7 @@ class DeletePhysicalQuantityCommand(Command):
             
             # Восстанавливаем видимую величину
             if self.previous_visible_quantity:
-                self.app_model.quantity_manager.set_visible_quantity(
+                self.app_model.set_visible_quantity(
                     self.previous_visible_quantity.L,
                     self.previous_visible_quantity.T,
                     self.previous_visible_quantity

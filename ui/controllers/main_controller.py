@@ -226,7 +226,9 @@ class MainController(QObject):
             # Разблокируем операции с полем
             if hasattr(main_window, '_block_field_operations'):
                 main_window._block_field_operations(False)
-            
+        
+        # Уведомляем об изменении состояния undo/redo
+        self._notify_state_changed()
         self._suppress_next_click()
     
     def _delete_and_suppress(self, L: int, T: int, group_name: str):
@@ -295,7 +297,9 @@ class MainController(QObject):
             # Разблокируем операции с полем
             if hasattr(main_window, '_block_field_operations'):
                 main_window._block_field_operations(False)
-            
+        
+        # Уведомляем об изменении состояния undo/redo
+        self._notify_state_changed()
         self._suppress_next_click()
     
     def _get_used_groups_at_position(self, L: int, T: int) -> List[str]:

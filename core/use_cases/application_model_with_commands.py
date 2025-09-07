@@ -4,6 +4,8 @@ from core.use_cases.physical_quantity_manager import PhysicalQuantityManager
 from core.use_cases.system_group_manager import SystemGroupManager
 from core.use_cases.law_manager import LawManager, LawGroupManager, ParallelogramLogic
 from core.use_cases.command_pattern.delete_quantity_command import DeletePhysicalQuantityCommand
+from core.use_cases.command_pattern.create_quantity_command import CreatePhysicalQuantityCommand
+from core.use_cases.command_pattern.update_quantity_command import UpdatePhysicalQuantityCommand
 from core.use_cases.command_pattern.command_history import CommandHistory
 from core.use_cases.application_model import ApplicationModel
 
@@ -44,6 +46,28 @@ class ApplicationModelWithCommands(ApplicationModel):
     ) -> PhysicalQuantity:
         """Обновить физическую величину"""
         return self.quantity_manager.update_quantity(old_quantity, name, symbol, unit, dimension, new_group_id)
+    
+    def create_physical_quantity_with_command(self, name: str, symbol: str, unit: str, dimension: str, L: int, T: int, group_id: str) -> bool:
+        """Создать физическую величину с поддержкой отмены/повтора"""
+        command = CreatePhysicalQuantityCommand(self, name, symbol, unit, dimension, L, T, group_id)
+        
+        # Выполняем команду
+        if command.execute():
+            # Добавляем в историю
+            self.command_history.add_command(command)
+            return True
+        return False
+    
+    def update_physical_quantity_with_command(self, old_quantity: PhysicalQuantity, name: str, symbol: str, unit: str, dimension: str, new_group_id: str) -> bool:
+        """Обновить физическую величину с поддержкой отмены/повтора"""
+        command = UpdatePhysicalQuantityCommand(self, old_quantity, name, symbol, unit, dimension, new_group_id)
+        
+        # Выполняем команду
+        if command.execute():
+            # Добавляем в историю
+            self.command_history.add_command(command)
+            return True
+        return False
     
     def delete_physical_quantity_with_command(self, L: int, T: int, group_id: str) -> bool:
         """Удалить физическую величину с поддержкой отмены/повтора"""

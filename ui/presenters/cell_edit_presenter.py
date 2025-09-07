@@ -2,6 +2,7 @@ from typing import List, Optional
 from PyQt5.QtWidgets import QDialog, QWidget
 
 from core.use_cases.application_model import ApplicationModel
+from core.use_cases.application_model_with_commands import ApplicationModelWithCommands
 from core.entities.physical_quantity import PhysicalQuantity
 from core.entities.system_group import SystemGroup
 
@@ -75,32 +76,73 @@ class CellEditPresenter:
     def save_quantity(self, name: str, symbol: str, unit: str, dimension: str, group_id: str) -> bool:
         """Сохранить физическую величину"""
         try:
-            if self.create_mode:
-                # Создаем новую величину
-                quantity = self.app_model.create_physical_quantity(
-                    name, symbol, unit, dimension, self.L, self.T, group_id
-                )
-                
-                # Устанавливаем как видимую - событие будет сгенерировано автоматически
-                self.app_model.set_visible_quantity(self.L, self.T, quantity)
-                
-                print(f"✅ Создана новая сота: {name} в позиции ({self.L}, {self.T})")
-                print("🎉 Событие 'quantity_created' будет обработано UIUpdateService")
-                
+            # Проверяем, поддерживает ли модель систему команд
+            if isinstance(self.app_model, ApplicationModelWithCommands):
+                if self.create_mode:
+                    # Создаем новую величину с поддержкой команд
+                    success = self.app_model.create_physical_quantity_with_command(
+                        name, symbol, unit, dimension, self.L, self.T, group_id
+                    )
+                    
+                    if success:
+                        # Получаем созданную величину для установки как видимой
+                        quantity = self.app_model.get_quantity_at_position(self.L, self.T, group_id)
+                        if quantity:
+                            self.app_model.set_visible_quantity(self.L, self.T, quantity)
+                            print(f"✅ Создана новая сота: {name} в позиции ({self.L}, {self.T}) с поддержкой отмены")
+                            print("🎉 Событие 'quantity_created' будет обработано UIUpdateService")
+                        return True
+                    else:
+                        print(f"❌ Не удалось создать соту: {name}")
+                        return False
+                else:
+                    # Обновляем существующую с поддержкой команд
+                    if not self.current_quantity:
+                        return False
+                    
+                    success = self.app_model.update_physical_quantity_with_command(
+                        self.current_quantity, name, symbol, unit, dimension, group_id
+                    )
+                    
+                    if success:
+                        # Получаем обновленную величину для установки как видимой
+                        updated_quantity = self.app_model.get_quantity_at_position(self.L, self.T, group_id)
+                        if updated_quantity:
+                            self.app_model.set_visible_quantity(self.L, self.T, updated_quantity)
+                            print(f"✅ Обновлена сота: {name} в позиции ({self.L}, {self.T}) с поддержкой отмены")
+                            print("🎉 Событие 'quantity_updated' будет обработано UIUpdateService")
+                        return True
+                    else:
+                        print(f"❌ Не удалось обновить соту: {name}")
+                        return False
             else:
-                # Обновляем существующую
-                if not self.current_quantity:
-                    return False
-                
-                updated_quantity = self.app_model.update_physical_quantity(
-                    self.current_quantity, name, symbol, unit, dimension, group_id
-                )
-                
-                # Обновляем видимую величину - событие будет сгенерировано автоматически
-                self.app_model.set_visible_quantity(self.L, self.T, updated_quantity)
-                
-                print(f"✅ Обновлена сота: {name} в позиции ({self.L}, {self.T})")
-                print("🎉 Событие 'quantity_updated' будет обработано UIUpdateService")
+                # Старый режим без поддержки команд
+                if self.create_mode:
+                    # Создаем новую величину
+                    quantity = self.app_model.create_physical_quantity(
+                        name, symbol, unit, dimension, self.L, self.T, group_id
+                    )
+                    
+                    # Устанавливаем как видимую - событие будет сгенерировано автоматически
+                    self.app_model.set_visible_quantity(self.L, self.T, quantity)
+                    
+                    print(f"✅ Создана новая сота: {name} в позиции ({self.L}, {self.T})")
+                    print("🎉 Событие 'quantity_created' будет обработано UIUpdateService")
+                    
+                else:
+                    # Обновляем существующую
+                    if not self.current_quantity:
+                        return False
+                    
+                    updated_quantity = self.app_model.update_physical_quantity(
+                        self.current_quantity, name, symbol, unit, dimension, group_id
+                    )
+                    
+                    # Обновляем видимую величину - событие будет сгенерировано автоматически
+                    self.app_model.set_visible_quantity(self.L, self.T, updated_quantity)
+                    
+                    print(f"✅ Обновлена сота: {name} в позиции ({self.L}, {self.T})")
+                    print("🎉 Событие 'quantity_updated' будет обработано UIUpdateService")
             
             return True
             
